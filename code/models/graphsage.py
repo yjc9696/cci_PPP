@@ -11,8 +11,12 @@ class GraphSAGE(nn.Module):
                  n_layers,
                  activation,
                  dropout,
-                 aggregator_type):
+                 aggregator_type,
+                 num_genes):
         super(GraphSAGE, self).__init__()
+
+        self.num_genes = num_genes
+
         self.layers = nn.ModuleList()
 
         # input layer
@@ -37,6 +41,7 @@ class GraphSAGE(nn.Module):
     def forward(self, g, h):
         for layer in self.layers:
             h = layer(g, h)
+        # change to Cartesian product,
 
         h = self.linear2(h)
         # h = F.relu(h)

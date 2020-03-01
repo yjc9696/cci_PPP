@@ -21,8 +21,8 @@ def load_tissue(params=None):
     data_path = f'{root}/mouse_Mammary_gland{num}_data.csv'
     type_path = f'{root}/mouse_Mammary_gland{num}_celltype.csv'
     """
-    data_path = '../data/cell_cell_interaction/mouse_small_intestine_1189_data.csv'
-    type_path = '../data/cell_cell_interaction/mouse_brain_2915_celltype.csv'
+    data_path = '../data/mouse_data/mouse_brain_2915_data.csv'
+    type_path = '../data/mouse_data/mouse_brain_2915_celltype.csv'
 
     # load celltype file then update labels accordingly
     cell2type = pd.read_csv(type_path, index_col=0)

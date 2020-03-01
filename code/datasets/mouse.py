@@ -22,7 +22,7 @@ def load_mouse_mammary_gland(params):
     all_data = train + test
 
     proj_path = Path(__file__).parent.resolve().parent.resolve().parent.resolve()
-    mouse_data_path = proj_path / 'data' / 'mouse_data'
+    mouse_data_path = proj_path / 'data' / 'cell_cell_interaction'
     statistics_path = mouse_data_path / 'statistics'
 
     if not statistics_path.exists():
@@ -54,7 +54,7 @@ def load_mouse_mammary_gland(params):
 
     # generate cell label statistics file
     if not cell_statistics_path.exists():
-        cell_files = mouse_data_path.glob(f'*{tissue}*_celltype.csv')
+        cell_files = mouse_data_path.glob(f'*{tissue}*_cellcluster.csv')
         cell_types = set()
         for file in cell_files:
             # import pdb; pdb.set_trace()
@@ -90,8 +90,8 @@ def load_mouse_mammary_gland(params):
     matrices = []
     for num in all_data:
         # data_path = f'{root}/mouse_{tissue}{num}_data.csv'
-        data_path = mouse_data_path / f'mouse_{tissue}{num}_data.csv'
-        type_path = mouse_data_path / f'mouse_{tissue}{num}_celltype.csv'
+        data_path = mouse_data_path / f'mouse_{tissue}_{num}_data.csv'
+        type_path = mouse_data_path / f'mouse_{tissue}_{num}_cellcluster.csv'
 
         # load celltype file then update labels accordingly
         cell2type = pd.read_csv(type_path, index_col=0)
@@ -148,24 +148,44 @@ def load_mouse_mammary_gland(params):
     features = torch.cat([gene_feat, cell_feat], dim=0).type(torch.float)
     # features = torch.FloatTensor(graph.number_of_nodes(), params.dense_dim).normal_()
     # 3. then create masks for different purposes.
+
+
+
     labels = torch.LongTensor(labels)
 
+
     num_cells = graph.number_of_nodes() - num_genes
-    train_mask = torch.zeros(num_cells + num_genes, dtype=torch.int32)
-    test_mask = torch.zeros(num_cells + num_genes, dtype=torch.int32)
+    num_pairs = num_cells * num_cells
+
+    cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
+    cci = pd.read_csv(cci_path, header=0, index_col=0)
+    type1, type2 = label2id[cci.iloc[0][0]], label2id[cci.iloc[0][1]]
+
+    cci_labels = []
+    for i in labels:
+        for j in labels:
+            if i == type1 and j == type2:
+                cci_labels.append(1)
+            elif j == type1 and i == type2:
+                cci_labels.append(1)
+            else:
+                cci_labels.append(0)
+
+    train_mask = torch.zeros(num_pairs, dtype=torch.int32)
+    test_mask = torch.zeros(num_pairs, dtype=torch.int32)
 
     # import pdb;pdb.set_trace()
-    split_mask = random.sample(range(num_genes, num_genes+num_cells), sum(train))
+    split_mask = random.sample(range(0, num_pairs), int(0.7*num_pairs))
     train_mask[split_mask] += 1
     test_mask = torch.where(train_mask>0, torch.full_like(train_mask, 0), torch.full_like(train_mask, 1))
-    test_mask[[i for i in range(num_genes)]] = 0
+
 
 
     # train_mask[num_genes:sum(train) + num_genes] += 1
     # test_mask[-sum(test):] += 1
     # train_nid = torch.where(train_mask == 1)[0]
     # test_nid = torch.where(test_mask == 1)[0]
-    assert train_mask.sum().item() + test_mask.sum().item() == num_cells
+    assert train_mask.sum().item() + test_mask.sum().item() == num_pairs
     train_mask = train_mask.type(torch.bool)
     test_mask = test_mask.type(torch.bool)
     return num_cells, num_genes, num_labels, graph, features, labels, train_mask, test_mask

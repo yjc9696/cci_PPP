@@ -30,7 +30,8 @@ class Trainer:
                                n_layers=params.n_layers,
                                activation=F.relu,
                                dropout=params.dropout,
-                               aggregator_type=params.aggregator_type)
+                               aggregator_type=params.aggregator_type,
+                               num_genes=self.num_genes)
         # self.model = GCN(
         #                  in_feats=params.dense_dim,
         #                  n_hidden=params.hidden_dim,
@@ -58,24 +59,6 @@ class Trainer:
 
         for epoch in range(self.params.n_epochs):
             # forward
-
-            # for nf in NeighborSampler(g=self.graph,
-            #                           batch_size=2000,
-            #                           expand_factor=50,
-            #                           num_hops=params.n_layers+1,
-            #                           neighbor_type='in',
-            #                           shuffle=True,
-            #                           num_workers=16,
-            #                           seed_nodes=self.train_nid):
-            #     nf.copy_from_parent()
-            #     logits = self.model(nf, self.features[nf.map_to_parent_nid()])
-            #     batch_nids = nf.layer_parent_nid(-1).to(device=self.device, dtype=torch.long)
-            #     batch_labels=self.labels[batch_nids]
-            #     loss = loss_fn(logits, batch_labels)
-            #
-            #     optimizer.zero_grad()
-            #     loss.backward()
-            #     optimizer.step()
 
             logits = self.model(self.graph, self.features)
             loss = loss_fn(logits[self.train_mask], self.labels[self.train_mask[self.num_genes:]])
