@@ -96,14 +96,17 @@ def load_mouse_mammary_gland(params):
         type_path = mouse_data_path / f'mouse_{tissue}_{num}_cellcluster.csv'
 
         # load celltype file then update labels accordingly
-        cell2type = pd.read_csv(type_path, index_col=0)
+        cell2type = pd.read_csv(type_path, index_col=0, dtype=str)
         cell2type.columns = ['cell', 'type']
         cell2type['id'] = cell2type['type'].map(label2id)
+
         assert not cell2type['id'].isnull().any(), 'something wrong about celltype file.'
         labels += cell2type['id'].tolist()
 
         # load data file then update graph 
         df = pd.read_csv(data_path, index_col=0)  # (gene, cell)
+        df = df.fillna(0)
+        # import pdb; pdb.set_trace()
         df = df.transpose(copy=True)  # (cell, gene)
         assert cell2type['cell'].tolist() == df.index.tolist()
         df = df.rename(columns=gene2id)
@@ -136,6 +139,7 @@ def load_mouse_mammary_gland(params):
     # 2. create features
     sparse_feat = vstack(matrices).toarray()  # cell-wise  (cell, gene)
     # transpose to gene-wise
+    # import pdb; pdb.set_trace()
     gene_pca = PCA(dense_dim, random_state=random_seed).fit(sparse_feat[:sum(train)].T)
     gene_feat = gene_pca.transform(sparse_feat[:sum(train)].T)
     gene_evr = sum(gene_pca.explained_variance_ratio_) * 100
@@ -160,7 +164,8 @@ def load_mouse_mammary_gland(params):
     num_pairs = num_cells * num_cells
 
     cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
-    cci = pd.read_csv(cci_path, header=0, index_col=0)
+    cci = pd.read_csv(cci_path, header=0, index_col=0, dtype=str)
+    # import pdb; pdb.set_trace()
     type1, type2 = label2id[cci.iloc[0][0]], label2id[cci.iloc[0][1]]
 
     cci_labels = []

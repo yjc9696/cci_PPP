@@ -52,7 +52,7 @@ class Trainer:
         self.test_mask = self.test_mask.to(self.device)
         self.dataset = self.dataset.to(self.device)
         self.trainset = TrainSet(self.dataset[self.train_mask])
-        self.dataloader = DataLoader(self.trainset, batch_size=32, shuffle=True)
+        self.dataloader = DataLoader(self.trainset, batch_size=3200, shuffle=True)
 
 
 
@@ -63,9 +63,12 @@ class Trainer:
 
         for epoch in range(self.params.n_epochs):
             # forward
-            for step, batch_x, batch_y in enumerate(self.dataloader):
-
-                logits = self.model(self.graph, self.features, batch_x)
+            # import pdb; pdb.set_trace()
+            for step, (batch_x1, batch_x2, batch_y) in enumerate(self.dataloader):
+                # import pdb; pdb.set_trace()
+                # print(batch_x.size)
+                
+                logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 loss = loss_fn(logits, batch_y)
                 optimizer.zero_grad()
                 loss.backward()
@@ -83,12 +86,13 @@ class Trainer:
 
     def evaluate(self, mask):
         self.model.eval()
-        test_dataset = self.dataset[self.test_mask]
+        eval_dataset = self.dataset[mask]
         with torch.no_grad():
-            logits = self.model(self.graph, self.features, test_dataset[:, [0,1]])
+            logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
 
         _, indices = torch.max(logits, dim=1)
-        correct = torch.sum(indices == test_dataset[:,2]).item()
+        # import pdb; pdb.set_trace()
+        correct = torch.sum(indices == eval_dataset[:,2]).item()
         total = mask.type(torch.LongTensor).sum().item()
         return correct, total, correct / total
 
