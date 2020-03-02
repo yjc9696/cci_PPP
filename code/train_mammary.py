@@ -52,7 +52,7 @@ class Trainer:
         self.test_mask = self.test_mask.to(self.device)
         self.dataset = self.dataset.to(self.device)
         self.trainset = TrainSet(self.dataset[self.train_mask])
-        self.dataloader = DataLoader(self.trainset, batch_size=8, shuffle=True)
+        self.dataloader = DataLoader(self.trainset, batch_size=320, shuffle=True)
 
 
 
@@ -68,22 +68,19 @@ class Trainer:
        
                 logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 loss = loss_fn(logits, batch_y)
-                # print(logits)
-                # print(batch_y)
+
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-                # import pdb; pdb.set_trace()
-                # acc = self.evaluate(self.train_mask)
-                # print("Train Accuracy {:.4f}".format(acc))
                 _, _, train_acc = self.evaluate(self.train_mask)
 
                 c, t, test_acc = self.evaluate(self.test_mask)
                 if step % 20 == 0:
-                    print(f"Epoch {epoch:04d} Step {step:04d}: Acc {train_acc:.4f} / {test_acc:.4f}, Loss {loss:.4f}, [{c}/{t}]")
+                    pass
+                    # print(f"Epoch {epoch:04d} Step {step:04d}: Acc {train_acc:.4f} / {test_acc:.4f}, Loss {loss:.4f}, [{c}/{t}]")
 
-            if epoch % 20 == 0:
+            if epoch % 1 == 0:
                 print(
                     f"Epoch {epoch:04d}: Acc {train_acc:.4f} / {test_acc:.4f}, Loss {loss:.4f}, [{c}/{t}]")
 
@@ -131,6 +128,8 @@ if __name__ == '__main__':
                         help="list of dataset id")
     parser.add_argument("--tissue", required=True, type=str,
                         help="list of dataset id")
+    parser.add_argument("--batch_size", type=int, default=32,
+                        help="size of batch")
 
     params = parser.parse_args()
     print(params)

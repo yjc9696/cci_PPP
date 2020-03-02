@@ -1,1 +1,1 @@
-python ./code/train_mammary.py --dataset 1189 --tissue small_intestine --gpu 1
+python ./code/train_mammary.py --dataset 1189 --tissue small_intestine --gpu 1 --dense_dim 400 --hidden_dim 200

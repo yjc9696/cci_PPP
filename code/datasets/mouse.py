@@ -139,9 +139,12 @@ def load_mouse_mammary_gland(params):
     sparse_feat = vstack(matrices).toarray()  # cell-wise  (cell, gene)
     # transpose to gene-wise
     # import pdb; pdb.set_trace()
+    # sparse_feat = sparse_feat[:, 0:10000]
+    print(sparse_feat.shape)
     gene_pca = PCA(dense_dim, random_state=random_seed).fit(sparse_feat[:sum(train)].T)
     gene_feat = gene_pca.transform(sparse_feat[:sum(train)].T)
     gene_evr = sum(gene_pca.explained_variance_ratio_) * 100
+    # print(f'[PCA] {gene_pca.explained_variance_}')
     print(f'[PCA] Gene EVR: {gene_evr:.2f} %.')
     # do normalization
     sparse_feat = sparse_feat / np.sum(sparse_feat, axis=1, keepdims=True)
@@ -187,7 +190,7 @@ def load_mouse_mammary_gland(params):
     test_mask = torch.zeros(num_pairs, dtype=torch.int32)
 
     # import pdb;pdb.set_trace()
-    split_mask = random.sample(range(0, num_pairs), int(0.3*num_pairs))
+    split_mask = random.sample(range(0, num_pairs), int(0.7*num_pairs))
     train_mask[split_mask] += 1
     test_mask = torch.where(train_mask>0, torch.full_like(train_mask, 0), torch.full_like(train_mask, 1))
 
