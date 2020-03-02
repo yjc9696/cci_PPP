@@ -1,7 +1,7 @@
 from dgl.nn.pytorch.conv import SAGEConv
 from torch import nn
 import torch.nn.functional as F
-
+import torch
 
 class GraphSAGE(nn.Module):
     def __init__(self,
@@ -36,17 +36,17 @@ class GraphSAGE(nn.Module):
                              activation=activation))
         # output layer
         # self.linear1 = nn.Linear(n_hidden, n_hidden // 2)
-        self.linear2 = nn.Linear(n_hidden, n_classes)
+        self.linear2 = nn.Linear(n_hidden*3, n_classes)
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, g, h, x1, x2):
         for layer in self.layers:
             h = layer(g, h)
 
+        h = torch.cat([h[x1], h[x2], torch.abs(h[x1]-h[x2])], 1)
 
-        h = self.linear2(h[x1] + h[x2])
+        h = self.linear2(h)
         # h = self.softmax(h)
-
         # import pdb;pdb.set_trace()
         # h = F.relu(h)
         # h = self.linear2(h)
