@@ -37,14 +37,15 @@ class GraphSAGE(nn.Module):
         # output layer
         # self.linear1 = nn.Linear(n_hidden, n_hidden // 2)
         self.linear2 = nn.Linear(n_hidden, n_classes)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, g, h, x1, x2):
         for layer in self.layers:
             h = layer(g, h)
-        # change to Cartesian product,
-        
+
 
         h = self.linear2(h[x1] + h[x2])
+        # h = self.softmax(h)
 
         # import pdb;pdb.set_trace()
         # h = F.relu(h)

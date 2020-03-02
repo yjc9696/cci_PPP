@@ -106,7 +106,6 @@ def load_mouse_mammary_gland(params):
         # load data file then update graph 
         df = pd.read_csv(data_path, index_col=0)  # (gene, cell)
         df = df.fillna(0)
-        # import pdb; pdb.set_trace()
         df = df.transpose(copy=True)  # (cell, gene)
         assert cell2type['cell'].tolist() == df.index.tolist()
         df = df.rename(columns=gene2id)
@@ -155,37 +154,40 @@ def load_mouse_mammary_gland(params):
     # features = torch.FloatTensor(graph.number_of_nodes(), params.dense_dim).normal_()
     # 3. then create masks for different purposes.
 
-
-
-    # labels = torch.LongTensor(labels)
-
-
     num_cells = graph.number_of_nodes() - num_genes
-    num_pairs = num_cells * num_cells
+    
 
     cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
     cci = pd.read_csv(cci_path, header=0, index_col=0, dtype=str)
-    # import pdb; pdb.set_trace()
-    type1, type2 = label2id[cci.iloc[0][0]], label2id[cci.iloc[0][1]]
+    # choose two types as a, b
+    type1, type2 = label2id[cci.iloc[1][0]], label2id[cci.iloc[1][1]]
 
+    # generate pair
     cci_labels = []
+    num_of_1 = 0
     for i, label1 in enumerate(labels):
         for j, label2 in enumerate(labels):
             if type1 == label1 and type2 == label2:
                 cci_labels.append([i+num_genes, j+num_genes, 1])
+                num_of_1 += 1
             elif type1 == label2 and type2 == label1:
                 cci_labels.append([i + num_genes, j + num_genes, 1])
+                num_of_1 += 1
+            elif type1 == label1 or type2 == label2 or type1 == label2 or type2 == label1:
+                if random.random() < 0.01:
+                    cci_labels.append([i + num_genes, j + num_genes, 0])
             else:
-                cci_labels.append([i + num_genes, j + num_genes, 0])
+                pass
 
     cci_labels = torch.LongTensor(cci_labels)
-    print(f"Total {len(cci_labels)} pairs.")
+    num_pairs = len(cci_labels)
+    print(f"Total {len(cci_labels)} pairs. A and B pairs are: {num_of_1}")
 
     train_mask = torch.zeros(num_pairs, dtype=torch.int32)
     test_mask = torch.zeros(num_pairs, dtype=torch.int32)
 
     # import pdb;pdb.set_trace()
-    split_mask = random.sample(range(0, num_pairs), int(0.7*num_pairs))
+    split_mask = random.sample(range(0, num_pairs), int(0.3*num_pairs))
     train_mask[split_mask] += 1
     test_mask = torch.where(train_mask>0, torch.full_like(train_mask, 0), torch.full_like(train_mask, 1))
 
