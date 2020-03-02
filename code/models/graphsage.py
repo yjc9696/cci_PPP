@@ -38,12 +38,12 @@ class GraphSAGE(nn.Module):
         # self.linear1 = nn.Linear(n_hidden, n_hidden // 2)
         self.linear2 = nn.Linear(n_hidden, n_classes)
 
-    def forward(self, g, h):
+    def forward(self, g, h, x):
         for layer in self.layers:
             h = layer(g, h)
         # change to Cartesian product,
 
-        h = self.linear2(h)
+        h = self.linear2(h[x[:, 0]] + h[x[:, 1]])
         # h = F.relu(h)
         # h = self.linear2(h)
         return h

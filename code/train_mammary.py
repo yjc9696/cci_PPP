@@ -5,11 +5,13 @@ import networkx as nx
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
 import dgl
 from dgl.contrib.sampling import NeighborSampler
 # self-defined
-from datasets import load_mouse_mammary_gland, load_tissue
+from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
 from models import GraphSAGE, GCN, GAT, VAE
+
 
 
 class Trainer:
@@ -19,7 +21,7 @@ class Trainer:
         # self.log_dir = get_dump_path(params) 
 
         # data
-        self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.labels, \
+        self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.dataset, \
         self.train_mask, self.test_mask, = load_mouse_mammary_gland(params)
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
         # self.features = self.vae.get_hidden(self.features)
@@ -48,9 +50,11 @@ class Trainer:
         self.features = self.features.to(self.device)
         self.train_mask = self.train_mask.to(self.device)
         self.test_mask = self.test_mask.to(self.device)
-        self.labels = self.labels.to(self.device)
-        # self.train_nid = self.train_nid.to(self.device)
-        # self.test_nid = self.test_nid.to(self.device)
+        self.dataset = self.dataset.to(self.device)
+        self.trainset = TrainSet(self.dataset[self.train_mask])
+        self.dataloader = DataLoader(self.trainset, batch_size=32, shuffle=True)
+
+
 
     def train(self):
         self.model.train()
@@ -59,16 +63,18 @@ class Trainer:
 
         for epoch in range(self.params.n_epochs):
             # forward
+            for step, batch_x, batch_y in enumerate(self.dataloader):
 
-            logits = self.model(self.graph, self.features)
-            loss = loss_fn(logits[self.train_mask], self.labels[self.train_mask[self.num_genes:]])
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                logits = self.model(self.graph, self.features, batch_x)
+                loss = loss_fn(logits, batch_y)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            # acc = self.evaluate(self.train_mask)
-            # print("Train Accuracy {:.4f}".format(acc))
+                # acc = self.evaluate(self.train_mask)
+                # print("Train Accuracy {:.4f}".format(acc))
             _, _, train_acc = self.evaluate(self.train_mask)
+
             c, t, test_acc = self.evaluate(self.test_mask)
 
             if epoch % 20 == 0:
@@ -77,19 +83,19 @@ class Trainer:
 
     def evaluate(self, mask):
         self.model.eval()
+        test_dataset = self.dataset[self.test_mask]
         with torch.no_grad():
-            logits = self.model(self.graph, self.features)
-            logits = logits[mask]
-            labels = self.labels[mask[self.num_genes:]]
+            logits = self.model(self.graph, self.features, test_dataset[:, [0,1]])
+
         _, indices = torch.max(logits, dim=1)
-        correct = torch.sum(indices == labels).item()
+        correct = torch.sum(indices == test_dataset[:,2]).item()
         total = mask.type(torch.LongTensor).sum().item()
         return correct, total, correct / total
 
 
 if __name__ == '__main__':
     """
-    python ./code/train_mammary.py --train_dataset 3510 1311 6633 6905 4909 2081 --test_dataset 1059 648 1592 --tissue Mammary_gland
+    python ./code/train_mammary.py --dataset 1189 --tissue small_intestine
     python ./code/train_mammary.py --train_dataset 2466 --test_dataset 135 283 352 658 3201 --tissue Peripheral_blood
     """
     parser = argparse.ArgumentParser(description='GraphSAGE')
@@ -114,9 +120,7 @@ if __name__ == '__main__':
                         help="Aggregator type: mean/gcn/pool/lstm")
     # parser.add_argument("--root", type=str, default="../data/mammary_gland",
     #                     help="root path")
-    parser.add_argument("--train_dataset", nargs="+", required=True, type=int,
-                        help="list of dataset id")
-    parser.add_argument("--test_dataset", nargs="+", required=True, type=int,
+    parser.add_argument("--dataset", nargs="+", required=True, type=int,
                         help="list of dataset id")
     parser.add_argument("--tissue", required=True, type=str,
                         help="list of dataset id")

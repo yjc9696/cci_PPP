@@ -10,16 +10,18 @@ from pathlib import Path
 import numpy as np
 import random
 
+from .dataset import TrainSet
+
 
 def load_mouse_mammary_gland(params):
     random_seed = params.random_seed
     dense_dim = params.dense_dim
     # root = params.root
-    train = params.train_dataset
-    test = params.test_dataset
+    train = params.dataset
+
     tissue = params.tissue
 
-    all_data = train + test
+    all_data = train
 
     proj_path = Path(__file__).parent.resolve().parent.resolve().parent.resolve()
     mouse_data_path = proj_path / 'data' / 'cell_cell_interaction'
@@ -151,7 +153,7 @@ def load_mouse_mammary_gland(params):
 
 
 
-    labels = torch.LongTensor(labels)
+    # labels = torch.LongTensor(labels)
 
 
     num_cells = graph.number_of_nodes() - num_genes
@@ -162,14 +164,17 @@ def load_mouse_mammary_gland(params):
     type1, type2 = label2id[cci.iloc[0][0]], label2id[cci.iloc[0][1]]
 
     cci_labels = []
-    for i in labels:
-        for j in labels:
-            if i == type1 and j == type2:
-                cci_labels.append(1)
-            elif j == type1 and i == type2:
-                cci_labels.append(1)
+    for i, label1 in enumerate(labels):
+        for j, label2 in enumerate(labels):
+            if type1 == label1 and type2 == label2:
+                cci_labels.append([i+num_genes, j+num_genes, 1])
+            elif type1 == label2 and type2 == label1:
+                cci_labels.append([i + num_genes, j + num_genes, 1])
             else:
-                cci_labels.append(0)
+                cci_labels.append([i + num_genes, j + num_genes, 0])
+
+    cci_labels = torch.LongTensor(cci_labels)
+    print(f"Total {len(cci_labels)} pairs.")
 
     train_mask = torch.zeros(num_pairs, dtype=torch.int32)
     test_mask = torch.zeros(num_pairs, dtype=torch.int32)
@@ -180,15 +185,11 @@ def load_mouse_mammary_gland(params):
     test_mask = torch.where(train_mask>0, torch.full_like(train_mask, 0), torch.full_like(train_mask, 1))
 
 
-
-    # train_mask[num_genes:sum(train) + num_genes] += 1
-    # test_mask[-sum(test):] += 1
-    # train_nid = torch.where(train_mask == 1)[0]
-    # test_nid = torch.where(test_mask == 1)[0]
     assert train_mask.sum().item() + test_mask.sum().item() == num_pairs
     train_mask = train_mask.type(torch.bool)
     test_mask = test_mask.type(torch.bool)
-    return num_cells, num_genes, num_labels, graph, features, labels, train_mask, test_mask
+    # return num_cells, num_genes, num_labels, graph, features, cci_labels, train_mask, test_mask
+    return num_cells, num_genes, 2, graph, features, cci_labels, train_mask, test_mask
 
 
 if __name__ == '__main__':
@@ -217,10 +218,10 @@ if __name__ == '__main__':
                         help="Aggregator type: mean/gcn/pool/lstm")
     parser.add_argument("--root", type=str, default="../../data/mammary_gland",
                         help="root path")
-    parser.add_argument("--train_dataset", nargs="+", required=True, type=int,
+    parser.add_argument("--dataset", nargs="+", required=True, type=int,
                         help="list of dataset id")
-    parser.add_argument("--test_dataset", nargs="+", required=True, type=int,
-                        help="list of dataset id")
+    # parser.add_argument("--test_dataset", nargs="+", required=True, type=int,
+    #                     help="list of dataset id")
     parser.add_argument("--tissue", required=True, type=str,
                         help="list of dataset id")
 
