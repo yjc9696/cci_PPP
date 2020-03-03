@@ -52,7 +52,7 @@ class Trainer:
         self.test_mask = self.test_mask.to(self.device)
         self.dataset = self.dataset.to(self.device)
         self.trainset = TrainSet(self.dataset[self.train_mask])
-        self.dataloader = DataLoader(self.trainset, batch_size=320, shuffle=True)
+        self.dataloader = DataLoader(self.trainset, batch_size=32, shuffle=True)
 
 
 
@@ -130,6 +130,9 @@ if __name__ == '__main__':
                         help="list of dataset id")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="size of batch")
+    parser.add_argument("--ligand_receptor_pair_path", type=str, default="mouse_ligand_receptor_pair",
+                        help="gene ligand receptor pair path")
+                        
 
     params = parser.parse_args()
     print(params)

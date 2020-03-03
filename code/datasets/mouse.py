@@ -13,6 +13,7 @@ import random
 from .dataset import TrainSet
 
 
+
 def load_mouse_mammary_gland(params):
     random_seed = params.random_seed
     dense_dim = params.dense_dim
@@ -21,11 +22,17 @@ def load_mouse_mammary_gland(params):
 
     tissue = params.tissue
 
+    ligand_receptor_pair_path = params.ligand_receptor_pair_path
+
     all_data = train
 
     proj_path = Path(__file__).parent.resolve().parent.resolve().parent.resolve()
     mouse_data_path = proj_path / 'data' / 'cell_cell_interaction'
     statistics_path = mouse_data_path / 'statistics'
+
+
+    ligand_receptor_pair_path = mouse_data_path / (ligand_receptor_pair_path + '.csv')
+
 
     if not statistics_path.exists():
         statistics_path.mkdir()
@@ -80,6 +87,19 @@ def load_mouse_mammary_gland(params):
     label2id = {label: idx for idx, label in enumerate(id2label)}
     print(f"totally {num_genes} genes, {num_labels} labels.")
 
+    # prepare ligand receptor pair
+    lcp = pd.read_csv(ligand_receptor_pair_path, header=0, index_col=0)
+    lcp = lcp.applymap(lambda x: gene2id[x] if x in gene2id else -1)
+    ligand = lcp['ligand'].tolist()
+    receptor = lcp['receptor'].tolist()
+    pair1_mask = ligand + receptor
+    pair2_mask = receptor + ligand
+    # assert(len(ligand) == len(receptor), "ligand num should match receptor num.")
+
+
+    cci_labels = []
+    cci_of_1_num = 0
+
     # 1. read data, restore everything in a graph,
     graph = dgl.DGLGraph()
     #debug
@@ -115,7 +135,51 @@ def load_mouse_mammary_gland(params):
         # print(df.head())
         print(f'Nonzero Ratio: {df.fillna(0).astype(bool).sum().sum() / df.size * 100:.2f}%')
 
-        # import pdb; pdb.set_trace()
+        # choose the pairs that have ligand and receptor gene
+        cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
+        cci = pd.read_csv(cci_path, header=0, index_col=0, dtype=str)
+        cci['type1'] = cci['cluster1'].map(label2id)
+        cci['type2'] = cci['cluster2'].map(label2id)
+
+        # stores the pairs that have relation
+        cci_labels_gt_path = statistics_path / (f'mouse_{tissue}_{num}_cci_labels_gt.csv')
+        
+        if not cci_labels_gt_path.exists():
+            for i in range(len(df)):
+                print(i)
+                print(cci_of_1_num)
+                for j in range(len(df)):
+                    if i != j:
+                        pair1 = df.iloc[i][pair1_mask].fillna(0)
+                        pair1.index = list(range(len(pair1)))
+                        pair2 = df.iloc[j][pair2_mask].fillna(0)
+                        pair2.index = list(range(len(pair2)))
+                        pair = pd.concat([pair1, pair2], 1)
+                        for k in range(len(pair)):
+                            if pair.iloc[k][0] > 0 and pair.iloc[k][1] > 0:
+                                type1 = cell2type.iloc[i]['id']
+                                type2 = cell2type.iloc[j]['id']
+                                for m in range(len(cci)):
+                                    id1 = cci.iloc[m]['type1']
+                                    id2 = cci.iloc[m]['type2']
+
+                                    if (type1 == id1 and type2 == id2) or (type1 == id2 and type2 == id1):
+                                        cci_labels.append([i, j, 1])
+                                        cci_of_1_num += 1
+                                        break
+                                break
+         
+            with open(cci_labels_gt_path, 'w', encoding='utf-8') as f:
+                for cci_label in cci_labels:
+                    f.write(f"{cci_label[0]},{cci_label[1]},{cci_label[2]}\r\n")
+        
+        cci_labels = pd.read_csv(cci_labels_gt_path, header=None)
+        cci_labels[0] = cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
+        cci_labels[1] = cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
+        cci_labels = cci_labels.values.tolist()
+
+
+
         # maintain inter-datasets index for graph and RNA-seq values
         arr = df.to_numpy()
         row_idx, col_idx = arr.nonzero()  # intra-dataset index
@@ -144,7 +208,7 @@ def load_mouse_mammary_gland(params):
     gene_pca = PCA(dense_dim, random_state=random_seed).fit(sparse_feat[:sum(train)].T)
     gene_feat = gene_pca.transform(sparse_feat[:sum(train)].T)
     gene_evr = sum(gene_pca.explained_variance_ratio_) * 100
-    # print(f'[PCA] {gene_pca.explained_variance_}')
+    # print(f'[PCA] explained_variance_: {gene_pca.explained_variance_}')
     print(f'[PCA] Gene EVR: {gene_evr:.2f} %.')
     # do normalization
     sparse_feat = sparse_feat / np.sum(sparse_feat, axis=1, keepdims=True)
@@ -155,36 +219,39 @@ def load_mouse_mammary_gland(params):
 
     features = torch.cat([gene_feat, cell_feat], dim=0).type(torch.float)
     # features = torch.FloatTensor(graph.number_of_nodes(), params.dense_dim).normal_()
+    
+    
+    
     # 3. then create masks for different purposes.
 
     num_cells = graph.number_of_nodes() - num_genes
     
 
-    cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
-    cci = pd.read_csv(cci_path, header=0, index_col=0, dtype=str)
-    # choose two types as a, b
-    type1, type2 = label2id[cci.iloc[1][0]], label2id[cci.iloc[1][1]]
+    # cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
+    # cci = pd.read_csv(cci_path, header=0, index_col=0, dtype=str)
+    # # choose two types as a, b
+    # type1, type2 = label2id[cci.iloc[1][0]], label2id[cci.iloc[1][1]]
 
-    # generate pair
-    cci_labels = []
-    num_of_1 = 0
-    for i, label1 in enumerate(labels):
-        for j, label2 in enumerate(labels):
-            if type1 == label1 and type2 == label2:
-                cci_labels.append([i+num_genes, j+num_genes, 1])
-                num_of_1 += 1
-            elif type1 == label2 and type2 == label1:
-                cci_labels.append([i + num_genes, j + num_genes, 1])
-                num_of_1 += 1
-            elif type1 == label1 or type2 == label2 or type1 == label2 or type2 == label1:
-                if random.random() < 0.01:
-                    cci_labels.append([i + num_genes, j + num_genes, 0])
-            else:
-                pass
+    # # generate pair
+    # cci_labels = []
+    # cci_of_1_num = 0
+    # for i, label1 in enumerate(labels):
+    #     for j, label2 in enumerate(labels):
+    #         if type1 == label1 and type2 == label2:
+    #             cci_labels.append([i+num_genes, j+num_genes, 1])
+    #             cci_of_1_num += 1
+    #         elif type1 == label2 and type2 == label1:
+    #             cci_labels.append([i + num_genes, j + num_genes, 1])
+    #             cci_of_1_num += 1
+    #         elif type1 == label1 or type2 == label2 or type1 == label2 or type2 == label1:
+    #             if random.random() < 0.01:
+    #                 cci_labels.append([i + num_genes, j + num_genes, 0])
+    #         else:
+    #             pass
 
     cci_labels = torch.LongTensor(cci_labels)
     num_pairs = len(cci_labels)
-    print(f"Total {len(cci_labels)} pairs. A and B pairs are: {num_of_1}")
+    print(f"Total {len(cci_labels)} pairs. A and B pairs are: {cci_of_1_num}")
 
     train_mask = torch.zeros(num_pairs, dtype=torch.int32)
     test_mask = torch.zeros(num_pairs, dtype=torch.int32)
