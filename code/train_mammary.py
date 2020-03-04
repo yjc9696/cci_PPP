@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import dgl
 from dgl.contrib.sampling import NeighborSampler
+from sklearn.metrics import precision_recall_fscore_support
+import sklearn
 # self-defined
 from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
 from models import GraphSAGE, GCN, GAT, VAE
@@ -19,6 +21,8 @@ class Trainer:
         self.params = params
         self.device = torch.device('cpu' if self.params.gpu == -1 else f'cuda:{params.gpu}')
         # self.log_dir = get_dump_path(params) 
+
+        self.batch_size = params.batch_size
 
         # data
         self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.dataset, \
@@ -52,49 +56,51 @@ class Trainer:
         self.test_mask = self.test_mask.to(self.device)
         self.dataset = self.dataset.to(self.device)
         self.trainset = TrainSet(self.dataset[self.train_mask])
-        self.dataloader = DataLoader(self.trainset, batch_size=32, shuffle=True)
-
-
+        self.dataloader = DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True)
+        self.loss_weight = torch.Tensor([1, 9]).to(self.device)
 
     def train(self):
         self.model.train()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr)
-        loss_fn = nn.CrossEntropyLoss()
-
+        loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
         for epoch in range(self.params.n_epochs):
             # forward
             # import pdb; pdb.set_trace()
             for step, (batch_x1, batch_x2, batch_y) in enumerate(self.dataloader):
        
                 logits = self.model(self.graph, self.features, batch_x1, batch_x2)
+                # print(logits)
                 loss = loss_fn(logits, batch_y)
 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-                _, _, train_acc = self.evaluate(self.train_mask)
-
-                c, t, test_acc = self.evaluate(self.test_mask)
-                if step % 20 == 0:
-                    pass
-                    # print(f"Epoch {epoch:04d} Step {step:04d}: Acc {train_acc:.4f} / {test_acc:.4f}, Loss {loss:.4f}, [{c}/{t}]")
+                _, _, train_loss = self.evaluate(self.train_mask)
+                precision, recall, test_loss = self.evaluate(self.test_mask)
+                
+                # if step % 20 == 0:
+                    # print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, loss: {train_loss}")
 
             if epoch % 1 == 0:
-                print(
-                    f"Epoch {epoch:04d}: Acc {train_acc:.4f} / {test_acc:.4f}, Loss {loss:.4f}, [{c}/{t}]")
+                # precision, recall, train_loss = self.evaluate(self.train_mask)
+                precision, recall, test_loss = self.evaluate(self.test_mask)
+                print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, loss: {test_loss}")
+
 
     def evaluate(self, mask):
         self.model.eval()
         eval_dataset = self.dataset[mask]
+        loss_fn = nn.CrossEntropyLoss(self.loss_weight)
         with torch.no_grad():
             logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
-
+            loss = loss_fn(logits, eval_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
         # import pdb; pdb.set_trace()
-        correct = torch.sum(indices == eval_dataset[:,2]).item()
-        total = mask.type(torch.LongTensor).sum().item()
-        return correct, total, correct / total
+        # correct = torch.sum(indices == eval_dataset[:,2]).item()
+        # total = mask.type(torch.LongTensor).sum().item()
+        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist())
+        
+        return precision[1], recall[1], loss
 
 
 if __name__ == '__main__':

@@ -148,7 +148,10 @@ def load_mouse_mammary_gland(params):
             for i in range(len(df)):
                 print(i)
                 print(cci_of_1_num)
-                for j in range(len(df)):
+
+                cur_cci = []
+                
+                for j in range(i, len(df)):
                     if i != j:
                         pair1 = df.iloc[i][pair1_mask].fillna(0)
                         pair1.index = list(range(len(pair1)))
@@ -165,19 +168,28 @@ def load_mouse_mammary_gland(params):
 
                                     if (type1 == id1 and type2 == id2) or (type1 == id2 and type2 == id1):
                                         cci_labels.append([i, j, 1])
+                                        cur_cci.append([i, j, 1])
                                         cci_of_1_num += 1
                                         break
                                 break
-         
-            with open(cci_labels_gt_path, 'w', encoding='utf-8') as f:
+
+                with open(cci_labels_gt_path, 'a+', encoding='utf-8') as f:
+                    print(f"cur cci {len(cur_cci)}")
+                    for cci_label in cur_cci:
+                        f.write(f"{cci_label[0]},{cci_label[1]},{cci_label[2]}\r\n")
+
+            with open('total'+cci_labels_gt_path, 'w', encoding='utf-8') as f:
                 for cci_label in cci_labels:
                     f.write(f"{cci_label[0]},{cci_label[1]},{cci_label[2]}\r\n")
         
         cci_labels = pd.read_csv(cci_labels_gt_path, header=None)
         cci_labels[0] = cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
         cci_labels[1] = cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
-        cci_labels = cci_labels.values.tolist()
-
+        cci_labels = cci_labels.values.tolist()[:1000]
+        #debug
+        for i in range(10000):
+            j = int((random.random())%1120 + 5)
+            cci_labels.append([i%1180 + 2+num_genes, j + num_genes, 0])
 
 
         # maintain inter-datasets index for graph and RNA-seq values
@@ -224,6 +236,8 @@ def load_mouse_mammary_gland(params):
     
     # 3. then create masks for different purposes.
 
+    print(f"load cci ground truth done: {len(cci_labels)}")
+
     num_cells = graph.number_of_nodes() - num_genes
     
 
@@ -257,7 +271,7 @@ def load_mouse_mammary_gland(params):
     test_mask = torch.zeros(num_pairs, dtype=torch.int32)
 
     # import pdb;pdb.set_trace()
-    split_mask = random.sample(range(0, num_pairs), int(0.7*num_pairs))
+    split_mask = random.sample(range(0, num_pairs), int(0.8*num_pairs))
     train_mask[split_mask] += 1
     test_mask = torch.where(train_mask>0, torch.full_like(train_mask, 0), torch.full_like(train_mask, 1))
 
