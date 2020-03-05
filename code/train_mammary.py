@@ -25,8 +25,8 @@ class Trainer:
         self.batch_size = params.batch_size
 
         # data
-        self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.dataset, \
-        self.train_mask, self.test_mask, = load_mouse_mammary_gland(params)
+        self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.train_dataset, \
+        self.train_mask, self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
         # self.features = self.vae.get_hidden(self.features)
         # model
@@ -53,9 +53,10 @@ class Trainer:
         self.model.to(self.device)
         self.features = self.features.to(self.device)
         self.train_mask = self.train_mask.to(self.device)
-        self.test_mask = self.test_mask.to(self.device)
-        self.dataset = self.dataset.to(self.device)
-        self.trainset = TrainSet(self.dataset[self.train_mask])
+        self.vali_mask = self.vali_mask.to(self.device)
+        self.train_dataset = self.train_dataset.to(self.device)
+        self.trainset = TrainSet(self.train_dataset[self.train_mask])
+        self.test_dataset = self.test_dataset.to(self.device)
         self.dataloader = DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True)
         self.loss_weight = torch.Tensor([1, 9]).to(self.device)
 
@@ -75,33 +76,41 @@ class Trainer:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                _, _, train_loss = self.evaluate(self.train_mask)
-                precision, recall, test_loss = self.evaluate(self.test_mask)
+                # _, _, train_loss = self.evaluate(self.train_mask)
+                # precision, recall, vali_loss = self.evaluate(self.vali_mask)
                 
                 # if step % 20 == 0:
                     # print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, loss: {train_loss}")
 
             if epoch % 1 == 0:
-                # precision, recall, train_loss = self.evaluate(self.train_mask)
-                precision, recall, test_loss = self.evaluate(self.test_mask)
-                print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, loss: {test_loss}")
-
+                # precision, recall, test_loss = self.test(self.test_dataset)
+                # print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, loss: {test_loss}")
+                precision, recall, vali_loss = self.evaluate(self.vali_mask)
+                print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, loss: {vali_loss}")
 
     def evaluate(self, mask):
         self.model.eval()
-        eval_dataset = self.dataset[mask]
+        eval_dataset = self.train_dataset[mask]
         loss_fn = nn.CrossEntropyLoss(self.loss_weight)
         with torch.no_grad():
             logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
             loss = loss_fn(logits, eval_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
-        # import pdb; pdb.set_trace()
-        # correct = torch.sum(indices == eval_dataset[:,2]).item()
-        # total = mask.type(torch.LongTensor).sum().item()
-        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist())
-        
+        # print(eval_dataset[:, 2][:100])
+        # print(indices[:100])
+        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         return precision[1], recall[1], loss
 
+    def test(self, test_dataset):
+        self.model.eval()
+        eval_dataset = test_dataset
+        loss_fn = nn.CrossEntropyLoss(self.loss_weight)
+        with torch.no_grad():
+            logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
+            loss = loss_fn(logits, eval_dataset[:, 2])
+        _, indices = torch.max(logits, dim=1)
+        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
+        return precision[1], recall[1], loss
 
 if __name__ == '__main__':
     """

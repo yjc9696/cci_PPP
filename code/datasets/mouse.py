@@ -97,7 +97,9 @@ def load_mouse_mammary_gland(params):
     # assert(len(ligand) == len(receptor), "ligand num should match receptor num.")
 
 
-    cci_labels = []
+    train_cci_labels = []
+    test_cci_labels = []
+    
     cci_of_1_num = 0
 
     # 1. read data, restore everything in a graph,
@@ -132,65 +134,46 @@ def load_mouse_mammary_gland(params):
         # filter out useless columns if exists (when using gene intersection)
         col = [c for c in df.columns if c in gene2id.values()]
         df = df[col]
-        # print(df.head())
+
         print(f'Nonzero Ratio: {df.fillna(0).astype(bool).sum().sum() / df.size * 100:.2f}%')
 
         # choose the pairs that have ligand and receptor gene
-        cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
-        cci = pd.read_csv(cci_path, header=0, index_col=0, dtype=str)
-        cci['type1'] = cci['cluster1'].map(label2id)
-        cci['type2'] = cci['cluster2'].map(label2id)
+        # cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
+        # cci = pd.read_csv(cci_path, header=0, index_col=0, dtype=str)
+        # cci['type1'] = cci['cluster1'].map(label2id)
+        # cci['type2'] = cci['cluster2'].map(label2id)
 
         # stores the pairs that have relation
-        cci_labels_gt_path = statistics_path / (f'mouse_{tissue}_{num}_cci_labels_gt.csv')
+        train_cci_labels_gt_paths = (mouse_data_path / 'train_dataset').glob('*gt*.csv')
         
-        if not cci_labels_gt_path.exists():
-            for i in range(len(df)):
-                print(i)
-                print(cci_of_1_num)
+        for file in train_cci_labels_gt_paths:
+            cur_train_cci_labels = pd.read_csv(file, header=None)
+            cur_train_cci_labels[0] = cur_train_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
+            cur_train_cci_labels[1] = cur_train_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
+            cur_train_cci_labels = cur_train_cci_labels.values.tolist()
+            train_cci_labels += cur_train_cci_labels
 
-                cur_cci = []
-                
-                for j in range(i, len(df)):
-                    if i != j:
-                        pair1 = df.iloc[i][pair1_mask].fillna(0)
-                        pair1.index = list(range(len(pair1)))
-                        pair2 = df.iloc[j][pair2_mask].fillna(0)
-                        pair2.index = list(range(len(pair2)))
-                        pair = pd.concat([pair1, pair2], 1)
-                        for k in range(len(pair)):
-                            if pair.iloc[k][0] > 0 and pair.iloc[k][1] > 0:
-                                type1 = cell2type.iloc[i]['id']
-                                type2 = cell2type.iloc[j]['id']
-                                for m in range(len(cci)):
-                                    id1 = cci.iloc[m]['type1']
-                                    id2 = cci.iloc[m]['type2']
-
-                                    if (type1 == id1 and type2 == id2) or (type1 == id2 and type2 == id1):
-                                        cci_labels.append([i, j, 1])
-                                        cur_cci.append([i, j, 1])
-                                        cci_of_1_num += 1
-                                        break
-                                break
-
-                with open(cci_labels_gt_path, 'a+', encoding='utf-8') as f:
-                    print(f"cur cci {len(cur_cci)}")
-                    for cci_label in cur_cci:
-                        f.write(f"{cci_label[0]},{cci_label[1]},{cci_label[2]}\r\n")
-
-            with open('total'+cci_labels_gt_path, 'w', encoding='utf-8') as f:
-                for cci_label in cci_labels:
-                    f.write(f"{cci_label[0]},{cci_label[1]},{cci_label[2]}\r\n")
+        # train_cci_labels = train_cci_labels[:100]
         
-        cci_labels = pd.read_csv(cci_labels_gt_path, header=None)
-        cci_labels[0] = cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
-        cci_labels[1] = cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
-        cci_labels = cci_labels.values.tolist()[:1000]
-        #debug
-        for i in range(10000):
-            j = int((random.random())%1120 + 5)
-            cci_labels.append([i%1180 + 2+num_genes, j + num_genes, 0])
+        junk_labels_path = (mouse_data_path / 'train_dataset').glob('*junk.csv')
+        for file in junk_labels_path:
+            junk_cci_labels = pd.read_csv(file, header=None)
+            junk_cci_labels[0] = junk_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
+            junk_cci_labels[1] = junk_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
+            junk_cci_labels = junk_cci_labels.values.tolist()
+            train_cci_labels += junk_cci_labels
+        
+        # train_cci_labels = train_cci_labels[:11000]
+        # import pdb; pdb.set_trace()
 
+        test_cci_labels_gt_paths = (mouse_data_path / 'test_dataset').glob('*gt*.csv')
+        
+        for file in test_cci_labels_gt_paths:
+            cur_test_cci_labels = pd.read_csv(file, header=None)
+            cur_test_cci_labels[0] = cur_test_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
+            cur_test_cci_labels[1] = cur_test_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
+            cur_test_cci_labels = cur_test_cci_labels.values.tolist()
+            test_cci_labels += cur_test_cci_labels
 
         # maintain inter-datasets index for graph and RNA-seq values
         arr = df.to_numpy()
@@ -236,51 +219,30 @@ def load_mouse_mammary_gland(params):
     
     # 3. then create masks for different purposes.
 
-    print(f"load cci ground truth done: {len(cci_labels)}")
-
     num_cells = graph.number_of_nodes() - num_genes
     
+    train_cci_labels = torch.LongTensor(train_cci_labels)
+    test_cci_labels = torch.LongTensor(test_cci_labels)
 
-    # cci_path = mouse_data_path / f'mouse_{tissue}_{num}_cluster_cluster_interaction_combined.csv'
-    # cci = pd.read_csv(cci_path, header=0, index_col=0, dtype=str)
-    # # choose two types as a, b
-    # type1, type2 = label2id[cci.iloc[1][0]], label2id[cci.iloc[1][1]]
-
-    # # generate pair
-    # cci_labels = []
-    # cci_of_1_num = 0
-    # for i, label1 in enumerate(labels):
-    #     for j, label2 in enumerate(labels):
-    #         if type1 == label1 and type2 == label2:
-    #             cci_labels.append([i+num_genes, j+num_genes, 1])
-    #             cci_of_1_num += 1
-    #         elif type1 == label2 and type2 == label1:
-    #             cci_labels.append([i + num_genes, j + num_genes, 1])
-    #             cci_of_1_num += 1
-    #         elif type1 == label1 or type2 == label2 or type1 == label2 or type2 == label1:
-    #             if random.random() < 0.01:
-    #                 cci_labels.append([i + num_genes, j + num_genes, 0])
-    #         else:
-    #             pass
-
-    cci_labels = torch.LongTensor(cci_labels)
-    num_pairs = len(cci_labels)
-    print(f"Total {len(cci_labels)} pairs. A and B pairs are: {cci_of_1_num}")
+    num_pairs = len(train_cci_labels)
+    print(f"Total train {len(train_cci_labels)} pairs.")
+    print(f"Total test {len(test_cci_labels)} pairs.")
 
     train_mask = torch.zeros(num_pairs, dtype=torch.int32)
-    test_mask = torch.zeros(num_pairs, dtype=torch.int32)
+    vali_mask = torch.zeros(num_pairs, dtype=torch.int32)
 
     # import pdb;pdb.set_trace()
     split_mask = random.sample(range(0, num_pairs), int(0.8*num_pairs))
     train_mask[split_mask] += 1
-    test_mask = torch.where(train_mask>0, torch.full_like(train_mask, 0), torch.full_like(train_mask, 1))
+    vali_mask = torch.where(train_mask>0, torch.full_like(train_mask, 0), torch.full_like(train_mask, 1))
 
 
-    assert train_mask.sum().item() + test_mask.sum().item() == num_pairs
+    assert train_mask.sum().item() + vali_mask.sum().item() == num_pairs
     train_mask = train_mask.type(torch.bool)
-    test_mask = test_mask.type(torch.bool)
-    # return num_cells, num_genes, num_labels, graph, features, cci_labels, train_mask, test_mask
-    return num_cells, num_genes, 2, graph, features, cci_labels, train_mask, test_mask
+    vali_mask = vali_mask.type(torch.bool)
+
+    # return num_cells, num_genes, num_labels, graph, features, train_cci_labels, train_mask, vali_mask
+    return num_cells, num_genes, 2, graph, features, train_cci_labels, train_mask, vali_mask, test_cci_labels
 
 
 if __name__ == '__main__':
