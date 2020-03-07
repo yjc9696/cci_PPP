@@ -135,12 +135,7 @@ def generate_junk(clusters, dataset):
                     f.write(f"{int(cci_label[0])},{int(cci_label[1])},{int(cci_label[2])}\r\n")
 
 
-
-if __name__ == "__main__":
-    cur_path = Path(__file__).parent.resolve()
-    import os
-    os.chdir(cur_path)
-    print(os.getcwd())
+def dataset1():
     test_cluster = [5, 9, 10, 15, 18]
     train_cluster = [1, 2, 3, 4, 6, 7, 8, 11, 12, 13, 14, 16, 17, 19]
     
@@ -153,3 +148,25 @@ if __name__ == "__main__":
     print('begin train cluster generate:')
     generate_gt(train_cluster, dataset='train_dataset')
     generate_junk(train_cluster, dataset='train_dataset')
+
+def dataset2():
+    test_cluster = [3, 5, 7, 15, 17]
+    train_cluster = [1, 2, 4, 6, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19]
+    
+    # test_dataset
+    print('begin test cluster generate:')
+    generate_gt(test_cluster, dataset='test_dataset2')
+    generate_junk(test_cluster, dataset='test_dataset2')
+
+    # train_dataset
+    print('begin train cluster generate:')
+    generate_gt(train_cluster, dataset='train_dataset2')
+    generate_junk(train_cluster, dataset='train_dataset2')
+
+if __name__ == "__main__":
+    cur_path = Path(__file__).parent.resolve()
+    import os
+    os.chdir(cur_path)
+    print(os.getcwd())
+    # dataset1()
+    dataset2()
