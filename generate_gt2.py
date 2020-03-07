@@ -143,6 +143,9 @@ if __name__ == "__main__":
     import os
 
     random.seed(10086)
+    random.seed(seed)
+    np.random.seed(seed)
+    
 
     os.chdir(cur_path)
     print(os.getcwd())

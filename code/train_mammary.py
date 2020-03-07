@@ -13,12 +13,13 @@ import sklearn
 # self-defined
 from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
 from models import GraphSAGE, GCN, GAT, VAE
-
+from torchlight import set_seed
 
 
 class Trainer:
     def __init__(self, params):
         self.params = params
+        set_seed(params.random_seed)
         self.device = torch.device('cpu' if self.params.gpu == -1 else f'cuda:{params.gpu}')
         # self.log_dir = get_dump_path(params) 
 
@@ -73,6 +74,7 @@ class Trainer:
 
         ll_loss = 1e5
         for epoch in range(self.params.n_epochs):
+            self.model.train()
             for step, (batch_x1, batch_x2, batch_y) in enumerate(self.dataloader):
        
                 logits = self.model(self.graph, self.features, batch_x1, batch_x2)
@@ -91,10 +93,11 @@ class Trainer:
             if epoch % 1 == 0:
                 precision, recall, train_loss = self.evaluate(self.train_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, train loss: {vali_loss}")
-                precision, recall, vali_loss = self.evaluate(self.vali_mask)
-                print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
-                precision, recall, test_loss = self.test(self.test_dataset)
-                print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
+                if self.params.is_run == 0:
+                    precision, recall, vali_loss = self.evaluate(self.vali_mask)
+                    print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
+                    precision, recall, test_loss = self.test(self.test_dataset)
+                    print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
 
     def evaluate(self, mask):
         self.model.eval()
@@ -104,8 +107,6 @@ class Trainer:
             logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
             loss = loss_fn(logits, eval_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
-        # print(eval_dataset[:, 2][:100])
-        # print(indices[:100])
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         return precision[1], recall[1], loss
 
@@ -166,7 +167,9 @@ if __name__ == '__main__':
     parser.add_argument("--train_dataset", type=str, default="train_dataset2",
                         help="train dataset")
     parser.add_argument("--test_dataset", type=str, default="test_dataset2",
-                        help="test dataset")                    
+                        help="test dataset")
+    parser.add_argument("--is_run", type=int, default=0,
+                        help="nothing, for debug")                    
     params = parser.parse_args()
     print(params)
 
