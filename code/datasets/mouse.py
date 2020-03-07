@@ -163,6 +163,10 @@ def load_mouse_mammary_gland(params):
             junk_cci_labels[1] = junk_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
             junk_cci_labels = junk_cci_labels.values.tolist()
 
+            # junk_cci_labels = np.asarray(junk_cci_labels)
+            # index = np.random.choice(junk_cci_labels.shape[0], len(junk_cci_labels)*0.5)
+            # junk_cci_labels = junk_cci_labels[index].values.tolist()
+
             train_cci_labels += junk_cci_labels
 
 
@@ -173,7 +177,7 @@ def load_mouse_mammary_gland(params):
             cur_test_cci_labels[0] = cur_test_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
             cur_test_cci_labels[1] = cur_test_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
             cur_test_cci_labels = cur_test_cci_labels.values.tolist()
-
+            
             test_cci_labels += cur_test_cci_labels
 
         junk_labels_path = (mouse_data_path / test_dataset).glob('*junk*.csv')
@@ -182,6 +186,10 @@ def load_mouse_mammary_gland(params):
             junk_cci_labels[0] = junk_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
             junk_cci_labels[1] = junk_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
             junk_cci_labels = junk_cci_labels.values.tolist()
+
+            # junk_cci_labels = np.asarray(junk_cci_labels)
+            # index = np.random.choice(junk_cci_labels.shape[0], len(junk_cci_labels)*0.5)
+            # junk_cci_labels = junk_cci_labels[index].values().tolist()
 
             test_cci_labels += junk_cci_labels
 
