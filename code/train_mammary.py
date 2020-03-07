@@ -24,6 +24,10 @@ class Trainer:
 
         self.batch_size = params.batch_size
 
+        self.load_pretrained_model = params.load_pretrained_model
+        self.pretrained_model_path = params.pretrained_model_path
+        self.save_model_path = params.save_model_path
+
         # data
         self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.train_dataset, \
         self.train_mask, self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
@@ -61,9 +65,13 @@ class Trainer:
         self.loss_weight = torch.Tensor([1, params.loss_weight]).to(self.device)
 
     def train(self):
+        if self.load_pretrained_model:
+            self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr)
         loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
+
+        ll_loss = 1e5
         for epoch in range(self.params.n_epochs):
             for step, (batch_x1, batch_x2, batch_y) in enumerate(self.dataloader):
        
@@ -77,8 +85,8 @@ class Trainer:
                 _, _, train_loss = self.evaluate(self.train_mask)
                 precision, recall, vali_loss = self.evaluate(self.vali_mask)
                 
-                # if step % 20 == 0:
-                    # print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, loss: {train_loss}")
+            if (ll_loss - vali_loss) / ll_loss > 0.005:
+                torch.save(self.model.state_dict(), self.save_model_path)
 
             if epoch % 1 == 0:
                 precision, recall, train_loss = self.evaluate(self.train_mask)

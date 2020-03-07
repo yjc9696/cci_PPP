@@ -5,11 +5,11 @@ python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset2 --t
 --lr 1e-4 \
 --n_epochs 10000 \
 --batch_size 320 \
---dropout 0.2 \
+--dropout 0.1 \
 --loss_weight 1 \
 --n_layers 1 \
 --pretrained_model_path checkpoints/best_modelv1.pth \
 --load_pretrained_model 0 \
---save_model_path checkpoints/best_modelv1.pth
+--save_model_path checkpoints/mousev1.pth
 
 
