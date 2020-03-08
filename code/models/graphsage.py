@@ -51,13 +51,14 @@ class GraphSAGE(nn.Module):
         h_src = self.linear1(torch.cat([h[x1], h[x2], torch.abs(h[x1]-h[x2])], 1))
         h_tar = self.linear1(torch.cat([h[x1_tar], h[x2_tar], torch.abs(h[x1_tar]-h[x2_tar])], 1))
         # mouse doesn't have bn
-        h_src = self.dense1_bn(h_src)
-        h_tar = self.dense1_bn(h_tar)
+        # h_src = self.dense1_bn(h_src)
+        # h_tar = self.dense1_bn(h_tar)
 
         h_src_mmd = F.relu(h_src)
         h_tar_mmd = F.relu(h_tar)
 
         h_p = self.linear2(h_src_mmd)
+        # h_p = h_src
 
         return h_p, h_src_mmd, h_tar_mmd
         # return h, 0, 0

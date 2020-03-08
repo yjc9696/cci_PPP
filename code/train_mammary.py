@@ -30,6 +30,8 @@ class Trainer:
         self.pretrained_model_path = params.pretrained_model_path
         self.save_model_path = params.save_model_path
 
+        self.using_mmd = params.using_mmd
+
         # data
         self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.train_dataset, \
         self.train_mask, self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
@@ -65,7 +67,7 @@ class Trainer:
         self.test_dataset = self.test_dataset.to(self.device)
         self.train_dataloader = DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
-        self.loss_weight = torch.Tensor([1, params.loss_weight]).to(self.device)
+        self.loss_weight = torch.Tensor(params.loss_weight).to(self.device)
 
     def train(self):
         if self.load_pretrained_model:
@@ -88,10 +90,14 @@ class Trainer:
                 
                 loss_c = loss_fn(logits, batch_y)
                 loss_mmd = mix_rbf_mmd2(src_mmd, tar_mmd, [10 ^ 3])
-                # loss_mmd = 0
-                print(loss_mmd)
-                loss = loss_c + 0.005 * loss_mmd
-                
+                if self.using_mmd:
+                    if loss_mmd == np.nan:
+                        print('nannnnnnnnnnnnnnnn')
+                        loss_mmd = 10
+                    loss = loss_c + 0.25 * loss_mmd
+                else:
+                    loss = loss_c
+
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -161,7 +167,7 @@ if __name__ == '__main__':
     #                     help="number of classes")
     parser.add_argument("--n_layers", type=int, default=1,
                         help="number of hidden gcn layers")
-    parser.add_argument("--loss_weight", type=int, default=1,
+    parser.add_argument("--loss_weight", nargs="+", type=int, default=[1, 1],
                         help="loss weight")
     parser.add_argument("--aggregator_type", type=str, default="gcn",
                         help="Aggregator type: mean/gcn/pool/lstm")
@@ -188,7 +194,9 @@ if __name__ == '__main__':
     parser.add_argument("--just_train", type=int, default=0,
                         help="nothing, for debug")
     parser.add_argument("--each_dataset_size", type=int, default=0,
-                        help="0 represent all")            
+                        help="0 represent all")
+    parser.add_argument("--using_mmd", type=int, default=0,
+                        help="if using mmd loss, 0 is not using")            
     params = parser.parse_args()
     print(params)
     
