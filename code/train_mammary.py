@@ -14,12 +14,13 @@ import sklearn
 from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
 from models import GraphSAGE, GCN, GAT, VAE
 from torchlight import set_seed
+import random
 
 
 class Trainer:
     def __init__(self, params):
         self.params = params
-        set_seed(params.random_seed)
+        
         self.device = torch.device('cpu' if self.params.gpu == -1 else f'cuda:{params.gpu}')
         # self.log_dir = get_dump_path(params) 
 
@@ -67,6 +68,7 @@ class Trainer:
 
     def train(self):
         if self.load_pretrained_model:
+            print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr)
@@ -75,6 +77,7 @@ class Trainer:
         ll_loss = 1e5
         for epoch in range(self.params.n_epochs):
             self.model.train()
+            import pdb; pdb.set_trace()
             for step, (batch_x1, batch_x2, batch_y) in enumerate(self.dataloader):
        
                 logits = self.model(self.graph, self.features, batch_x1, batch_x2)
@@ -84,16 +87,21 @@ class Trainer:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                _, _, train_loss = self.evaluate(self.train_mask)
-                precision, recall, vali_loss = self.evaluate(self.vali_mask)
                 
-            if (ll_loss - vali_loss) / ll_loss > 0.005:
+            _, _, train_loss = self.evaluate(self.train_mask)
+            precision, recall, vali_loss = self.evaluate(self.vali_mask)
+                
+            # if vali_loss < ll_loss:
+            #     torch.save(self.model.state_dict(), self.save_model_path)
+            #     ll_loss = vali_loss
+            if train_loss < ll_loss:
                 torch.save(self.model.state_dict(), self.save_model_path)
+                ll_loss = train_loss
 
             if epoch % 1 == 0:
                 precision, recall, train_loss = self.evaluate(self.train_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, train loss: {vali_loss}")
-                if self.params.is_run == 0:
+                if self.params.just_train == 0:
                     precision, recall, vali_loss = self.evaluate(self.vali_mask)
                     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
                     precision, recall, test_loss = self.test(self.test_dataset)
@@ -168,10 +176,17 @@ if __name__ == '__main__':
                         help="train dataset")
     parser.add_argument("--test_dataset", type=str, default="test_dataset2",
                         help="test dataset")
-    parser.add_argument("--is_run", type=int, default=0,
-                        help="nothing, for debug")                    
+    parser.add_argument("--just_train", type=int, default=0,
+                        help="nothing, for debug")
+    parser.add_argument("--each_dataset_size", type=int, default=0,
+                        help="0 represent all")            
     params = parser.parse_args()
     print(params)
+    
+    set_seed(params.random_seed)
+    # print(random.random())
+    # print(np.random.random())
+    # print(torch.rand(2))
 
     trainer = Trainer(params)
     trainer.train()

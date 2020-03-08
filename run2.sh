@@ -1,15 +1,15 @@
 python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset2 --test_dataset test_dataset2 \
---tissue small_intestine --gpu 0 \
+--tissue small_intestine --gpu 1 \
 --dense_dim 400 \
 --hidden_dim 200 \
---lr 1e-3 \
---n_epochs 10000 \
---batch_size 320 \
+--lr 1e-7 \
+--n_epochs 1000 \
+--batch_size 3200 \
 --dropout 0.1 \
 --loss_weight 1 \
---n_layers 2 \
+--n_layers 1 \
 --pretrained_model_path checkpoints/best_modelv2.pth \
---load_pretrained_model 0 \
+--load_pretrained_model 1 \
 --save_model_path checkpoints/best_modelv2.pth \
---is_run 1
-
+--just_train 1 \
+--each_dataset_size 0

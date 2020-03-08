@@ -1,4 +1,4 @@
-python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset2 --test_dataset test_dataset2 \
+python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset2_fake --test_dataset test_dataset2_fake \
 --tissue small_intestine --gpu 0 \
 --dense_dim 400 \
 --hidden_dim 200 \

@@ -65,11 +65,14 @@ def generate_gt(clusters, dataset):
         cur_cci = []
         cur_cci_junk_a2c = []
         cur_cci_junk_b2d = []
+        num = 0
         for i in range(len(df1)):
             for j in range(len(df2)):
+                num += 1
                 pair1 = df1.iloc[i][pair1_mask].fillna(0) #series
-                pair1.index = list(range(len(pair1)))
                 pair2 = df2.iloc[j][pair2_mask].fillna(0)
+                assert np.sum(pair1.index[:len(pair1)//2] == pair2.index[len(pair2)//2:]) == len(pair2)//2, "pair mask error"
+                pair1.index = list(range(len(pair1)))
                 pair2.index = list(range(len(pair2)))
                 pair = pd.concat([pair1, pair2], 1)
 
@@ -85,10 +88,9 @@ def generate_gt(clusters, dataset):
                     cur_cci.append([df1.iloc[i]['id'], df2.iloc[j]['id'], 1])
                     mp[df1.iloc[i]['id']] = df2.iloc[j]['id']
                     a, c = find_junk(df, df1.iloc[i]['id'], pair2_mask, pos_mask, clusters)
-                    b, d = find_junk(df, df2.iloc[j]['id'], pair1_mask, pos_mask, clusters)
+                    # b, d = find_junk(df, df2.iloc[j]['id'], pair1_mask, pos_mask, clusters)
                     cur_cci_junk_a2c.append([a, c, 0])
-                    cur_cci_junk_b2d.append([b, d, 0])
-                    break
+                    # cur_cci_junk_b2d.append([b, d, 0])
 
         with open(cci_labels_gt_path.format(dataset, id1, id2), 'w', encoding='utf-8') as f:
             print(f"cur cci {len(cur_cci)}")
@@ -100,10 +102,10 @@ def generate_gt(clusters, dataset):
             for cci_label in cur_cci_junk_a2c:
                 f.write(f"{int(cci_label[0])},{int(cci_label[1])},{int(cci_label[2])}\r\n")
 
-        with open(cci_labels_junk_path.format(dataset, id2, id1), 'w', encoding='utf-8') as f:
-            print(f"cur cci junk {len(cur_cci_junk_b2d)}")
-            for cci_label in cur_cci_junk_b2d:
-                f.write(f"{int(cci_label[0])},{int(cci_label[1])},{int(cci_label[2])}\r\n")
+        # with open(cci_labels_junk_path.format(dataset, id2, id1), 'w', encoding='utf-8') as f:
+        #     print(f"cur cci junk {len(cur_cci_junk_b2d)}")
+        #     for cci_label in cur_cci_junk_b2d:
+        #         f.write(f"{int(cci_label[0])},{int(cci_label[1])},{int(cci_label[2])}\r\n")
 
 
 def find_junk(df, id1, pair_mask, pos_mask, clusters):
@@ -143,18 +145,29 @@ if __name__ == "__main__":
     import os
 
     random.seed(10086)
-    random.seed(seed)
-    np.random.seed(seed)
-    
+    np.random.seed(10086)
 
     os.chdir(cur_path)
     print(os.getcwd())
+    # 2
+    test_cluster = [5, 9, 10, 15, 18, 19]
+    train_cluster = [1, 2, 3, 4, 6, 7, 8, 11, 12, 13, 14, 16, 17]
+    # test_dataset
+    print('begin test cluster generate:')
+    generate_gt(test_cluster, dataset='test_dataset2')
+
+    # train_dataset
+    print('begin train cluster generate:')
+    generate_gt(train_cluster, dataset='train_dataset2')
+
+    # 3
     test_cluster = [2, 4, 6, 8, 11, 12]
     train_cluster = [1, 3, 5, 7, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20]
+
     # test_dataset
     print('begin test cluster generate:')
     generate_gt(test_cluster, dataset='test_dataset3')
 
-    # train_dataset
+    # # train_dataset
     print('begin train cluster generate:')
     generate_gt(train_cluster, dataset='train_dataset3')

@@ -21,6 +21,7 @@ def load_mouse_mammary_gland(params):
     train = params.dataset
     train_dataset = params.train_dataset
     test_dataset = params.test_dataset
+    each_dataset_size = params.each_dataset_size
 
     tissue = params.tissue
 
@@ -146,26 +147,36 @@ def load_mouse_mammary_gland(params):
         # cci['type2'] = cci['cluster2'].map(label2id)
 
         # stores the pairs that have relation
+
+        indexs = list()
         train_cci_labels_gt_paths = (mouse_data_path / train_dataset).glob('*gt*.csv')
-        
-        for file in train_cci_labels_gt_paths:
+
+        for file in sorted(train_cci_labels_gt_paths):
             cur_train_cci_labels = pd.read_csv(file, header=None)
             cur_train_cci_labels[0] = cur_train_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
             cur_train_cci_labels[1] = cur_train_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
             cur_train_cci_labels = cur_train_cci_labels.values.tolist()
+     
+            if each_dataset_size > 0 and len(cur_train_cci_labels) > each_dataset_size:
+                cur_train_cci_labels = np.asarray(cur_train_cci_labels)
+                index = np.random.choice(cur_train_cci_labels.shape[0], each_dataset_size)
+                indexs.append(index)
+                cur_train_cci_labels = cur_train_cci_labels[index].tolist()
+
             train_cci_labels += cur_train_cci_labels
 
-
         junk_labels_path = (mouse_data_path / train_dataset).glob('*junk*.csv')
-        for file in junk_labels_path:
+        for i, file in enumerate(sorted(junk_labels_path)):
             junk_cci_labels = pd.read_csv(file, header=None)
             junk_cci_labels[0] = junk_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
             junk_cci_labels[1] = junk_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
             junk_cci_labels = junk_cci_labels.values.tolist()
 
-            # junk_cci_labels = np.asarray(junk_cci_labels)
-            # index = np.random.choice(junk_cci_labels.shape[0], len(junk_cci_labels)*0.5)
-            # junk_cci_labels = junk_cci_labels[index].values.tolist()
+            if each_dataset_size > 0 and len(junk_cci_labels) > each_dataset_size:
+                junk_cci_labels = np.asarray(junk_cci_labels)
+                # index = np.random.choice(junk_cci_labels.shape[0], len(junk_cci_labels)*0.5)
+                # use the same index in gt
+                junk_cci_labels = junk_cci_labels[indexs[i]].tolist()
 
             train_cci_labels += junk_cci_labels
 
