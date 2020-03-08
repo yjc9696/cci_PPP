@@ -12,7 +12,7 @@ from sklearn.metrics import precision_recall_fscore_support
 import sklearn
 # self-defined
 from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
-from models import GraphSAGE, GCN, GAT, VAE
+from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2
 from torchlight import set_seed
 import random
 
@@ -63,7 +63,8 @@ class Trainer:
         self.train_dataset = self.train_dataset.to(self.device)
         self.trainset = TrainSet(self.train_dataset[self.train_mask])
         self.test_dataset = self.test_dataset.to(self.device)
-        self.dataloader = DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True)
+        self.train_dataloader = DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True, drop_last=True)
+        self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         self.loss_weight = torch.Tensor([1, params.loss_weight]).to(self.device)
 
     def train(self):
@@ -75,15 +76,22 @@ class Trainer:
         loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
 
         ll_loss = 1e5
+        
         for epoch in range(self.params.n_epochs):
             self.model.train()
-            import pdb; pdb.set_trace()
-            for step, (batch_x1, batch_x2, batch_y) in enumerate(self.dataloader):
-       
-                logits = self.model(self.graph, self.features, batch_x1, batch_x2)
-                # print(logits)
-                loss = loss_fn(logits, batch_y)
-
+            for step, (batch_x1, batch_x2, batch_y) in enumerate(self.train_dataloader):
+                list_tar = list(enumerate(self.test_dataloader))
+                # import pdb; pdb.set_trace()
+                x1_tar, x2_tar, y_tar = list_tar[0][1][:, 0], list_tar[0][1][:, 1], list_tar[0][1][:, 2]
+                
+                logits, src_mmd, tar_mmd = self.model(self.graph, self.features, batch_x1, batch_x2, x1_tar, x2_tar)
+                
+                loss_c = loss_fn(logits, batch_y)
+                loss_mmd = mix_rbf_mmd2(src_mmd, tar_mmd, [10 ^ 3])
+                # loss_mmd = 0
+                print(loss_mmd)
+                loss = loss_c + 0.005 * loss_mmd
+                
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -112,7 +120,8 @@ class Trainer:
         eval_dataset = self.train_dataset[mask]
         loss_fn = nn.CrossEntropyLoss(self.loss_weight)
         with torch.no_grad():
-            logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
+            logits, _, _ = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1], eval_dataset[:, 0], eval_dataset[:, 1])
+            # import pdb; pdb.set_trace()
             loss = loss_fn(logits, eval_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
@@ -123,7 +132,7 @@ class Trainer:
         eval_dataset = test_dataset
         loss_fn = nn.CrossEntropyLoss(self.loss_weight)
         with torch.no_grad():
-            logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
+            logits, _, _ = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1], eval_dataset[:, 0], eval_dataset[:, 1])
             loss = loss_fn(logits, eval_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])

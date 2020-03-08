@@ -34,23 +34,31 @@ class GraphSAGE(nn.Module):
                              aggregator_type, 
                              feat_drop=dropout, 
                              activation=activation))
-        # output layer
-        self.linear1 = nn.Linear(n_hidden*3, n_classes)
-        # self.dense1_bn = nn.BatchNorm1d(n_hidden)
-        # self.linear2 = nn.Linear(n_hidden, n_classes)
 
-    def forward(self, g, h, x1, x2):
+        # self.dropout = nn.Dropout(p=0.5)
+
+        # output layer
+        self.linear1 = nn.Linear(n_hidden*3, n_hidden)
+        self.dense1_bn = nn.BatchNorm1d(n_hidden)
+        self.linear2 = nn.Linear(n_hidden, n_classes)
+
+    def forward(self, g, h, x1, x2, x1_tar, x2_tar):
         for layer in self.layers:
             h = layer(g, h)
 
         # h = self.linear1(h)
         
-        h = self.linear1(torch.cat([h[x1], h[x2], torch.abs(h[x1]-h[x2])], 1))
+        h_src = self.linear1(torch.cat([h[x1], h[x2], torch.abs(h[x1]-h[x2])], 1))
+        h_tar = self.linear1(torch.cat([h[x1_tar], h[x2_tar], torch.abs(h[x1_tar]-h[x2_tar])], 1))
         # mouse doesn't have bn
-        # h = self.dense1_bn(h)
-        # h = F.relu(h)
-        # h = self.linear2(h)
-        # h = self.softmax(h)
+        h_src = self.dense1_bn(h_src)
+        h_tar = self.dense1_bn(h_tar)
 
-        return h
+        h_src_mmd = F.relu(h_src)
+        h_tar_mmd = F.relu(h_tar)
+
+        h_p = self.linear2(h_src_mmd)
+
+        return h_p, h_src_mmd, h_tar_mmd
+        # return h, 0, 0
 
