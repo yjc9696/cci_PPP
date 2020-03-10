@@ -235,10 +235,10 @@ def load_mouse_mammary_gland(params):
 
     # 2. create features
     sparse_feat = vstack(matrices).toarray()  # cell-wise  (cell, gene)
-    # sparse_feat = preprocessing.scale(sparse_feat, axis=1)
-    sparse_feat = preprocessing.normalize(sparse_feat, norm='max', axis=1) #very good
-    # sparse_feat = sparse_feat / np.linalg.norm(sparse_feat, axis=1)[0]
     # transpose to gene-wise
+    # sparse_feat = preprocessing.scale(sparse_feat, axis=1) #very good
+    # sparse_feat = preprocessing.normalize(sparse_feat, norm='max', axis=1) 
+    # sparse_feat = sparse_feat / np.linalg.norm(sparse_feat, axis=1)[0]
     # import pdb; pdb.set_trace()
     # sparse_feat = sparse_feat[:, 0:10000]
     print(sparse_feat.shape)
@@ -249,6 +249,10 @@ def load_mouse_mammary_gland(params):
     print(f'[PCA] Gene EVR: {gene_evr:.2f} %.')
     # do normalization
     sparse_feat = sparse_feat / np.sum(sparse_feat, axis=1, keepdims=True)
+    # sparse_feat = preprocessing.scale(sparse_feat, axis=1) #very good
+    # sparse_feat = preprocessing.normalize(sparse_feat, norm='max', axis=1) 
+    # sparse_feat = sparse_feat / np.linalg.norm(sparse_feat, axis=1)[0]
+
     # use weighted gene_feat as cell_feat
     cell_feat = sparse_feat.dot(gene_feat)
     gene_feat = torch.from_numpy(gene_feat)  # use shared storage

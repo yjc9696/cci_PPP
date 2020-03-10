@@ -82,21 +82,13 @@ class Trainer:
         for epoch in range(self.params.n_epochs):
             self.model.train()
             for step, (batch_x1, batch_x2, batch_y) in enumerate(self.train_dataloader):
-                list_tar = list(enumerate(self.test_dataloader))
+                # list_tar = list(enumerate(self.test_dataloader))
                 # import pdb; pdb.set_trace()
-                x1_tar, x2_tar, y_tar = list_tar[0][1][:, 0], list_tar[0][1][:, 1], list_tar[0][1][:, 2]
+                # x1_tar, x2_tar, y_tar = list_tar[0][1][:, 0], list_tar[0][1][:, 1], list_tar[0][1][:, 2]
                 
-                logits, src_mmd, tar_mmd = self.model(self.graph, self.features, batch_x1, batch_x2, x1_tar, x2_tar)
+                logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 
-                loss_c = loss_fn(logits, batch_y)
-                loss_mmd = mix_rbf_mmd2(src_mmd, tar_mmd, [10 ^ 3])
-                if self.using_mmd:
-                    if loss_mmd == np.nan:
-                        print('nannnnnnnnnnnnnnnn')
-                        loss_mmd = 10
-                    loss = loss_c + 0.25 * loss_mmd
-                else:
-                    loss = loss_c
+                loss = loss_fn(logits, batch_y)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -126,7 +118,7 @@ class Trainer:
         eval_dataset = self.train_dataset[mask]
         loss_fn = nn.CrossEntropyLoss(self.loss_weight)
         with torch.no_grad():
-            logits, _, _ = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1], eval_dataset[:, 0], eval_dataset[:, 1])
+            logits, _, _ = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
             # import pdb; pdb.set_trace()
             loss = loss_fn(logits, eval_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
@@ -138,7 +130,7 @@ class Trainer:
         eval_dataset = test_dataset
         loss_fn = nn.CrossEntropyLoss(self.loss_weight)
         with torch.no_grad():
-            logits, _, _ = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1], eval_dataset[:, 0], eval_dataset[:, 1])
+            logits, _, _ = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
             loss = loss_fn(logits, eval_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
