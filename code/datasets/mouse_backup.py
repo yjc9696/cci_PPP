@@ -93,7 +93,7 @@ def load_mouse_mammary_gland(params):
 
     # prepare ligand receptor pair
     lcp = pd.read_csv(ligand_receptor_pair_path, header=0, index_col=0)
-    # lcp = lcp.applymap(lambda x: gene2id[x] if x in gene2id else -1)
+    lcp = lcp.applymap(lambda x: gene2id[x] if x in gene2id else -1)
     ligand = lcp['ligand'].tolist()
     receptor = lcp['receptor'].tolist()
     
@@ -102,19 +102,13 @@ def load_mouse_mammary_gland(params):
     exist_ligand = list()
     exist_receptor = list()
     for i in range(len(ligand)):
-        if (ligand[i] in genes and receptor[i]) in genes or \
-        (ligand[i] not in exist_ligand and receptor[i] not in exist_receptor):
+        if ligand[i] in genes and receptor[i] in genes:
             exist_ligand.append(ligand[i])
             exist_receptor.append(receptor[i])
     pair1_mask = exist_ligand + exist_receptor
     pair2_mask = exist_receptor + exist_ligand
-    exist_genes = list(set(exist_ligand) | set(exist_receptor))
-
     # assert(len(ligand) == len(receptor), "ligand num should match receptor num.")
 
-    # change
-    gene2id = {gene:idx for idx, gene in enumerate(exist_genes)}
-    num_genes = len(gene2id)
 
     train_cci_labels = []
     test_cci_labels = []
@@ -127,13 +121,13 @@ def load_mouse_mammary_gland(params):
     # add all genes as nodes
     graph.add_nodes(num_genes)
     # construct labels: -1 gene 0~19 cell types
-
+    
     # add gene edges: ligand and receptor
-    for i, j in zip(exist_ligand, exist_receptor):
-        graph.add_edge(gene2id[i], gene2id[j])
-        graph.add_edge(gene2id[j], gene2id[i])
+    # for i, j in zip(exist_ligand, exist_receptor):
+    #     graph.add_edge(gene2id[i], gene2id[j])
+    #     graph.add_edge(gene2id[j], gene2id[i])
 
-    # labels = []
+    labels = []
     matrices = []
     for num in all_data:
         # data_path = f'{root}/mouse_{tissue}{num}_data.csv'
@@ -146,20 +140,17 @@ def load_mouse_mammary_gland(params):
         cell2type['id'] = cell2type['type'].map(label2id)
 
         assert not cell2type['id'].isnull().any(), 'something wrong about celltype file.'
-        # labels += cell2type['id'].tolist()
+        labels += cell2type['id'].tolist()
 
         # load data file then update graph 
         df = pd.read_csv(data_path, index_col=0)  # (gene, cell)
         df = df.fillna(0)
         df = df.transpose(copy=True)  # (cell, gene)
-        # choose the ligand and receptor gene
-        # df = df[exist_genes]
         assert cell2type['cell'].tolist() == df.index.tolist()
         df = df.rename(columns=gene2id)
         # filter out useless columns if exists (when using gene intersection)
         col = [c for c in df.columns if c in gene2id.values()]
         df = df[col]
-        
 
         print(f'Nonzero Ratio: {df.fillna(0).astype(bool).sum().sum() / df.size * 100:.2f}%')
 
@@ -234,8 +225,6 @@ def load_mouse_mammary_gland(params):
         info_shape = (len(df), num_genes)
         info = csr_matrix((non_zeros, (row_idx, tgt_idx)), shape=info_shape)
         matrices.append(info)
-
-
 
         # add more nodes because of new cells
         graph.add_nodes(len(df))

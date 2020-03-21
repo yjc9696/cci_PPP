@@ -46,20 +46,13 @@ class GraphSAGE(nn.Module):
         for layer in self.layers:
             h = layer(g, h)
 
-        # h = self.linear1(h)
-        
         h_src = self.linear1(torch.cat([h[x1], h[x2], torch.abs(h[x1]-h[x2])], 1))
-
+        # h_src = self.linear1(h[x1] + h[x2])
         # mouse doesn't have bn
-        # h_src = self.dense1_bn(h_src)
-
+        h_src = self.dense1_bn(h_src)
         h_src_mmd = F.relu(h_src)
-
         h_p = self.linear2(h_src_mmd)
-        # h_p = h_src
-
         return h_p
-        # return h, 0, 0
 
 
 

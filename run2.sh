@@ -1,16 +1,16 @@
-python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset4 --test_dataset test_dataset4 \
+python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset3_mixed --test_dataset test_dataset3_mixed \
 --tissue small_intestine --gpu 1 \
---dense_dim 200 \
---hidden_dim 60 \
---lr 1e-3 \
+--dense_dim 400 \
+--hidden_dim 200 \
+--lr 1e-4 \
 --n_epochs 3000 \
---batch_size 256 \
+--batch_size 16 \
 --dropout 0.1 \
 --loss_weight 1 1 \
 --n_layers 2 \
 --pretrained_model_path checkpoints/best_modelv2.pth \
---load_pretrained_model 0 \
+--load_pretrained_model 1 \
 --save_model_path checkpoints/best_modelv2.pth \
 --just_train 0 \
 --using_mmd 0 \
---each_dataset_size 100
+--each_dataset_size 0
