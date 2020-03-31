@@ -112,7 +112,7 @@ def load_mouse_mammary_gland(params):
 
     # assert(len(ligand) == len(receptor), "ligand num should match receptor num.")
 
-    # change
+    # attention: only use the ligand and receptor genes. the other genes are ignored.
     gene2id = {gene:idx for idx, gene in enumerate(exist_genes)}
     num_genes = len(gene2id)
 

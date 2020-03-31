@@ -1,4 +1,4 @@
-python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset3 --test_dataset test_dataset3 \
+python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset3_mixed --test_dataset test_dataset3_mixed \
 --tissue small_intestine --gpu 0 \
 --dense_dim 200 \
 --hidden_dim 50 \
@@ -13,6 +13,6 @@ python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset3 --t
 --save_model_path checkpoints/best_modelv3.pth \
 --just_train 0 \
 --using_mmd 0 \
---each_dataset_size 10000
+--each_dataset_size 0
 
 

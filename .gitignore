@@ -131,4 +131,5 @@ dmypy.json
 /data
 /.idea
 /checkpoints
+/data_v1
 
