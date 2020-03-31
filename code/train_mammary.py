@@ -32,11 +32,9 @@ class Trainer:
         self.pretrained_model_path = params.pretrained_model_path
         self.save_model_path = params.save_model_path
 
-        self.using_mmd = params.using_mmd
-
         # data
-        self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.train_dataset, \
-        self.train_mask, self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
+        self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.graph_test, self.features_test, \
+            self.train_dataset, self.train_mask, self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
         # self.features = self.vae.get_hidden(self.features)
         # model
@@ -84,7 +82,6 @@ class Trainer:
         for epoch in range(self.params.n_epochs):
             self.model.train()
             for step, (batch_x1, batch_x2, batch_y) in enumerate(self.train_dataloader):
-                # list_tar = list(enumerate(self.test_dataloader))
 
                 logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 # import pdb; pdb.set_trace()
@@ -127,14 +124,14 @@ class Trainer:
 
     def test(self, test_dataset):
         self.model.eval()
-        eval_dataset = test_dataset
         loss_fn = nn.CrossEntropyLoss(self.loss_weight)
         with torch.no_grad():
-            logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
-            loss = loss_fn(logits, eval_dataset[:, 2])
+            logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
+            loss = loss_fn(logits, test_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
-        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
+        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         return precision[1], recall[1], loss
+
 
 if __name__ == '__main__':
     """
@@ -163,12 +160,6 @@ if __name__ == '__main__':
                         help="loss weight")
     parser.add_argument("--aggregator_type", type=str, default="gcn",
                         help="Aggregator type: mean/gcn/pool/lstm")
-    # parser.add_argument("--root", type=str, default="../data/mammary_gland",
-    #                     help="root path")
-    parser.add_argument("--dataset", nargs="+", required=True, type=int,
-                        help="list of dataset id")
-    parser.add_argument("--tissue", required=True, type=str,
-                        help="list of dataset id")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="size of batch")
     parser.add_argument("--ligand_receptor_pair_path", type=str, default="mouse_ligand_receptor_pair",
@@ -187,8 +178,13 @@ if __name__ == '__main__':
                         help="nothing, for debug")
     parser.add_argument("--each_dataset_size", type=int, default=0,
                         help="0 represent all")
-    parser.add_argument("--using_mmd", type=int, default=0,
-                        help="if using mmd loss, 0 is not using")            
+    parser.add_argument("--train_dataset", type=str, default='validation_dataset',
+                        help="train dataset")
+    parser.add_argument("--test_dataset", type=str, default='test_dataset',
+                        help="test dataset")
+    parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
+                        help="cluster - cluster interaction depleted")
+
     params = parser.parse_args()
     print(params)
     
