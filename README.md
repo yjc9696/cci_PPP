@@ -27,3 +27,6 @@ train_dataset: junk are randomly chosen.
 train_dataset2: 选择负样本，基因交叉后，随机选取共同基因最少5个细胞中的一个
 train_dataset3: 选择负样本，基因交叉后，随机选取共同基因最少5个细胞中的一个 和2的cluster不一样
 train_dataset2_3: 只选了1个基因最少的细胞，所以有很多0
+
+
+add dev branch
