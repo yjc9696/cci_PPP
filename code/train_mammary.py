@@ -58,8 +58,10 @@ class Trainer:
         #                  n_layers=params.n_layers,
         #                  activation=F.relu)
         self.graph.readonly(readonly_state=True)
+        self.graph_test.readonly(readonly_state=True)
         self.model.to(self.device)
         self.features = self.features.to(self.device)
+        self.features_test = self.features_test.to(self.device)
         self.train_mask = self.train_mask.to(self.device)
         self.vali_mask = self.vali_mask.to(self.device)
         self.train_dataset = self.train_dataset.to(self.device)
@@ -170,21 +172,20 @@ if __name__ == '__main__':
                         help="load_pretrained_model")                                   
     parser.add_argument("--save_model_path", type=str, default="checkpoints_default.pth",
                         help="save_model_path")
-    parser.add_argument("--train_dataset", type=str, default="train_dataset2",
+    parser.add_argument("--train_dataset", type=str, default="train_dataset",
                         help="train dataset")
-    parser.add_argument("--test_dataset", type=str, default="test_dataset2",
+    parser.add_argument("--test_dataset", type=str, default="test_dataset",
                         help="test dataset")
     parser.add_argument("--just_train", type=int, default=0,
                         help="nothing, for debug")
     parser.add_argument("--each_dataset_size", type=int, default=0,
                         help="0 represent all")
-    parser.add_argument("--train_dataset", type=str, default='validation_dataset',
-                        help="train dataset")
-    parser.add_argument("--test_dataset", type=str, default='test_dataset',
-                        help="test dataset")
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")
-
+    parser.add_argument("--data_dir", type=str, default='mouse_small_intestine',
+                        help="root path of the data dir")
+    parser.add_argument("--cell_data_path", type=str, default='mouse_small_intestine_1189_data.csv',
+                        help="cell data gene")
     params = parser.parse_args()
     print(params)
     

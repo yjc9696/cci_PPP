@@ -20,20 +20,21 @@ def load_mouse_mammary_gland(params):
     dense_dim = params.dense_dim
 
     proj_path = Path(__file__).parent.resolve().parent.resolve().parent.resolve()
-    mouse_data_path = proj_path / 'data'
+    mouse_data_path = proj_path / 'data' / params.data_dir #small_intestine
     train_dataset = mouse_data_path / params.train_dataset
     test_dataset = mouse_data_path / params.test_dataset
 
-    ligand_receptor_path = train_dataset / params.ligand_receptor_gene
+    ligand_receptor_path = mouse_data_path / params.ligand_receptor_gene
 
     # prepare the ligand and receptor genes.
     all_dataset = [train_dataset, test_dataset]
     genes = set()
     for dataset in all_dataset:
-        data_path = dataset / 'data'
+        data_path = dataset / params.cell_data_path
         # cell * gene
         cell_data = pd.read_csv(data_path, index_col=0).transpose().fillna(0)
-        genes.add(cell_data.columns.tolist())
+        for ge in cell_data.columns.tolist():
+            genes.add(ge)
 
     # prepare ligand receptor pair
     lcp = pd.read_csv(ligand_receptor_path, header=0, index_col=0)
@@ -86,7 +87,7 @@ def load_mouse_mammary_gland(params):
 
     for dataset in all_dataset:
 
-        data_path = dataset.glob('*data.csv')[0]
+        data_path = dataset.glob('*data.csv').__next__()
 
         cci_labels = []
 
@@ -155,8 +156,9 @@ def load_mouse_mammary_gland(params):
             graph.add_nodes(len(df))
             graph.add_edges(src_idx, tgt_idx)
             graph.add_edges(tgt_idx, src_idx)
+        else:
+            test_cci_labels += cci_labels
 
-        test_cci_labels + cci_labels
         matrices_test.append(info)
         graph_test.add_nodes(len(df))
         graph_test.add_edges(src_idx, tgt_idx)
@@ -229,6 +231,8 @@ def load_mouse_mammary_gland(params):
     train_mask = train_mask.type(torch.bool)
     vali_mask = vali_mask.type(torch.bool)
 
+    # import pdb; pdb.set_trace()
+
     # return num_cells, num_genes, num_labels, graph, features, train_cci_labels, train_mask, vali_mask
     return num_cells, num_genes, 2, graph, features, graph_test, features_test, train_cci_labels, train_mask, vali_mask, test_cci_labels
 
@@ -240,32 +244,25 @@ if __name__ == '__main__':
     """
     parser = argparse.ArgumentParser(description='GraphSAGE')
     parser.add_argument("--random_seed", type=int, default=10086)
-    parser.add_argument("--dropout", type=float, default=0.0,
-                        help="dropout probability")
-    parser.add_argument("--use_cpu", type=bool, default=False)
-    parser.add_argument("--lr", type=float, default=1e-3,
-                        help="learning rate")
-    parser.add_argument("--n_epochs", type=int, default=500,
-                        help="number of training epochs")
     parser.add_argument("--dense_dim", type=int, default=400,
                         help="number of hidden gcn units")
     parser.add_argument("--hidden_dim", type=int, default=200,
                         help="number of hidden gcn units")
-    parser.add_argument("--n_classes", type=int, default=10,
-                        help="number of classes")
-    parser.add_argument("--n_layers", type=int, default=1,
-                        help="number of hidden gcn layers")
-    parser.add_argument("--aggregator_type", type=str, default="gcn",
-                        help="Aggregator type: mean/gcn/pool/lstm")
-    parser.add_argument("--root", type=str, default="../../data/mammary_gland",
-                        help="root path")
-    parser.add_argument("--dataset", nargs="+", required=True, type=int,
-                        help="list of dataset id")
-    # parser.add_argument("--test_dataset", nargs="+", required=True, type=int,
-    #                     help="list of dataset id")
-    parser.add_argument("--tissue", required=True, type=str,
-                        help="list of dataset id")
-
+    parser.add_argument("--ligand_receptor_pair_path", type=str, default="mouse_ligand_receptor_pair",
+                        help="gene ligand receptor pair path")
+    parser.add_argument("--train_dataset", type=str, default="train_dataset",
+                        help="train dataset")
+    parser.add_argument("--test_dataset", type=str, default="test_dataset",
+                        help="test dataset")
+    parser.add_argument("--each_dataset_size", type=int, default=0,
+                        help="0 represent all")
+    parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
+                        help="cluster - cluster interaction depleted")
+    parser.add_argument("--data_dir", type=str, default='mouse_small_intestine',
+                        help="root path of the data dir")
+    parser.add_argument("--cell_data_path", type=str, default='mouse_small_intestine_1189_data.csv',
+                        help="cell data gene")
     params = parser.parse_args()
+    print(params)
 
     load_mouse_mammary_gland(params)
