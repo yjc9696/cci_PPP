@@ -7,13 +7,13 @@ python ./code/train_mammary.py --data_dir mouse_small_intestine \
 --hidden_dim 50 \
 --lr 1e-4 \
 --n_epochs 10000 \
---batch_size 32 \
+--batch_size 2 \
 --dropout 0.1 \
 --loss_weight 1 1 \
 --n_layers 2 \
 --pretrained_model_path checkpoints/best_modelv3.pth \
 --load_pretrained_model 0 \
---save_model_path checkpoints/best_modelv3.pth \
+--save_model_path checkpoints/best_modelv4.pth \
 --just_train 0 \
 --each_dataset_size 0
 

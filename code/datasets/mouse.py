@@ -41,6 +41,8 @@ def load_mouse_mammary_gland(params):
     # lcp = lcp.applymap(lambda x: gene2id[x] if x in gene2id else -1)
     ligand = lcp['ligand'].tolist()
     receptor = lcp['receptor'].tolist()
+    lcp_genes = set(lcp['ligand']) | set(lcp['receptor'])
+    gene_inter = lcp_genes.intersection(genes)
 
     exist_ligand = list()
     exist_receptor = list()
@@ -50,17 +52,16 @@ def load_mouse_mammary_gland(params):
             exist_receptor.append(receptor[i])
     pair1_mask = exist_ligand + exist_receptor
     pair2_mask = exist_receptor + exist_ligand
-    exist_genes = list(set(exist_ligand) | set(exist_receptor))
 
     assert(len(exist_ligand) == len(exist_receptor), "ligand num should match receptor num.")
 
     # attention: only use the ligand and receptor genes. the other genes are ignored.
-    gene2id = {gene:idx for idx, gene in enumerate(exist_genes)}
+    gene2id = {gene:idx for idx, gene in enumerate(gene_inter)}
     num_genes = len(gene2id)
 
     print(f"totally {num_genes} ligand and receptor genes. {len(exist_ligand)} pairs.")
 
-
+    # import pdb; pdb.set_trace()
 
     # 1. read data, restore everything in a graph,
     graph = dgl.DGLGraph()
@@ -90,7 +91,6 @@ def load_mouse_mammary_gland(params):
         data_path = dataset.glob('*data.csv').__next__()
 
         cci_labels = []
-
         # load data file then update graph 
         df = pd.read_csv(data_path, index_col=0)  # (gene, cell)
         df = df.fillna(0)
@@ -125,7 +125,9 @@ def load_mouse_mammary_gland(params):
             cur_cci_labels = cur_cci_labels.tolist()
             cci_labels += cur_cci_labels
 
-        cci_labels_junk_paths = (dataset / 'data').glob('*gt*.csv')
+            # import pdb; pdb.set_trace()
+
+        cci_labels_junk_paths = (dataset / 'data').glob('*junk*.csv')
         
         # cur_index = 0
         for file in sorted(cci_labels_junk_paths):
@@ -148,6 +150,7 @@ def load_mouse_mammary_gland(params):
         tgt_idx = df.columns[col_idx].astype(int).tolist()  # gene_index
         info_shape = (len(df), num_genes)
         info = csr_matrix((non_zeros, (row_idx, tgt_idx)), shape=info_shape)
+        # import pdb; pdb.set_trace()
 
         if not is_test_dataset:
             train_cci_labels += cci_labels
@@ -170,28 +173,6 @@ def load_mouse_mammary_gland(params):
 
         is_test_dataset = 1
 
-    # 2. create features
-    sparse_feat = vstack(matrices).toarray()  # cell-wise  (cell, gene)
-    # transpose to gene-wise
-    print(sparse_feat.shape)
-    gene_pca = PCA(dense_dim, random_state=random_seed).fit(sparse_feat.T)
-    gene_feat = gene_pca.transform(sparse_feat.T)
-    gene_evr = sum(gene_pca.explained_variance_ratio_) * 100
-    # print(f'[PCA] explained_variance_: {gene_pca.explained_variance_}')
-    print(f'[PCA] Gene EVR: {gene_evr:.2f} %.')
-    # do normalization
-    sparse_feat = sparse_feat / np.sum(sparse_feat, axis=1, keepdims=True)
-    # sparse_feat = preprocessing.scale(sparse_feat, axis=1) #very good
-    # sparse_feat = preprocessing.normalize(sparse_feat, norm='max', axis=1) 
-    # sparse_feat = sparse_feat / np.linalg.norm(sparse_feat, axis=1)[0]
-
-    # use weighted gene_feat as cell_feat
-    cell_feat = sparse_feat.dot(gene_feat)
-    gene_feat = torch.from_numpy(gene_feat)  # use shared storage
-    cell_feat = torch.from_numpy(cell_feat)
-
-    features = torch.cat([gene_feat, cell_feat], dim=0).type(torch.float)
-
     # 3. create test features
     sparse_feat_test = vstack(matrices_test).toarray()  # cell-wise  (cell, gene)
     # transpose to gene-wise
@@ -206,10 +187,33 @@ def load_mouse_mammary_gland(params):
 
     # use weighted gene_feat as cell_feat
     cell_feat = sparse_feat_test.dot(gene_feat)
+    gene_feat_tensor = torch.from_numpy(gene_feat)  # use shared storage
+    cell_feat = torch.from_numpy(cell_feat)
+
+    features_test = torch.cat([gene_feat_tensor, cell_feat], dim=0).type(torch.float)
+
+# 2. create features
+    sparse_feat = vstack(matrices).toarray()  # cell-wise  (cell, gene)
+    # # transpose to gene-wise
+    # print(sparse_feat.shape)
+    # gene_pca = PCA(dense_dim, random_state=random_seed).fit(sparse_feat_test.T)
+    # gene_feat = gene_pca.transform(sparse_feat_test.T)
+    # gene_evr = sum(gene_pca.explained_variance_ratio_) * 100
+    # # print(f'[PCA] explained_variance_: {gene_pca.explained_variance_}')
+    # print(f'[PCA] Gene EVR: {gene_evr:.2f} %.')
+    # # do normalization
+    # sparse_feat = sparse_feat / np.sum(sparse_feat, axis=1, keepdims=True)
+    # sparse_feat = preprocessing.scale(sparse_feat, axis=1) #very good
+    # sparse_feat = preprocessing.normalize(sparse_feat, norm='max', axis=1) 
+    # sparse_feat = sparse_feat / np.linalg.norm(sparse_feat, axis=1)[0]
+
+    # use weighted gene_feat as cell_feat
+    cell_feat = sparse_feat.dot(gene_feat)
     gene_feat = torch.from_numpy(gene_feat)  # use shared storage
     cell_feat = torch.from_numpy(cell_feat)
 
-    features_test = torch.cat([gene_feat, cell_feat], dim=0).type(torch.float)
+    features = torch.cat([gene_feat, cell_feat], dim=0).type(torch.float)
+
 
     # 4. then create masks for different purposes.
     num_cells = graph.number_of_nodes() - num_genes

@@ -18,7 +18,6 @@ from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2
 from torchlight import set_seed
 import random
 
-
 class Trainer:
     def __init__(self, params):
         self.params = params
@@ -53,7 +52,7 @@ class Trainer:
         #                  n_layers=params.n_layers,
         #                  activation=F.relu)
         # self.model = GAT(in_feats=params.dense_dim,
-        #                  n_hidden=100,
+        #                  n_hidden=params.hidden_dim,
         #                  n_classes=self.num_classes,
         #                  n_layers=params.n_layers,
         #                  activation=F.relu)
@@ -122,6 +121,7 @@ class Trainer:
         _, indices = torch.max(logits, dim=1)
         ap_score = average_precision_score(eval_dataset[:,2].tolist(), indices.tolist())
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
+        # import pdb; pdb.set_trace()
         return precision[1], recall[1], loss
 
     def test(self, test_dataset):
@@ -131,6 +131,8 @@ class Trainer:
             logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
             loss = loss_fn(logits, test_dataset[:, 2])
         _, indices = torch.max(logits, dim=1)
+        # print(len(indices), indices.sum().item())
+        # import pdb; pdb.set_trace()
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         return precision[1], recall[1], loss
 
@@ -172,9 +174,9 @@ if __name__ == '__main__':
                         help="load_pretrained_model")                                   
     parser.add_argument("--save_model_path", type=str, default="checkpoints_default.pth",
                         help="save_model_path")
-    parser.add_argument("--train_dataset", type=str, default="train_dataset",
+    parser.add_argument("--train_dataset", type=str, default="test_dataset",
                         help="train dataset")
-    parser.add_argument("--test_dataset", type=str, default="test_dataset",
+    parser.add_argument("--test_dataset", type=str, default="train_dataset",
                         help="test dataset")
     parser.add_argument("--just_train", type=int, default=0,
                         help="nothing, for debug")

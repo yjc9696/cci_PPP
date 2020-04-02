@@ -120,7 +120,7 @@ def generate_gt(params):
                 # print(len(pos_mask))
                 # import pdb;pdb.set_trace()
 
-                if len(pos_mask) > 10:
+                if len(pos_mask) > 20:
                     cur_cci.append([df1.iloc[i]['id'], df2.iloc[j]['id'], 1])
                     mp[df1.iloc[i]['id']] = df2.iloc[j]['id']
                     if choice:
@@ -142,26 +142,6 @@ def generate_gt(params):
             for cci_label in cur_cci_junk_a2c:
                 f.write(f'{(cci_label[0])},{(cci_label[1])},{int(cci_label[2])}\r\n')
 
-        # with open(cci_labels_junk_path.format(dataset_path, id2, type1), 'w', encoding='utf-8') as f:
-        #     print(f"cur cci junk {len(cur_cci_junk_b2d)}")
-        #     for cci_label in cur_cci_junk_b2d:
-        #         f.write(f"{int(cci_label[0])},{int(cci_label[1])},{int(cci_label[2])}\r\n")
-
-    # def long_time_task(name):
-    #     print('Run task %s (%s)...' % (name, os.getpid()))
-    #     start = time.time()
-    #     time.sleep(random.random() * 3)
-    #     end = time.time()
-    #     print('Task %s runs %0.2f seconds.' % (name, (end - start)))
-    # p = []
-    # for i in range(len(cci)):
-    #     t = threading.Thread(target=one_process, args=(i,))
-    #     t.start()
-    #     p.append(t)
-    # print('Waiting for all threads done...')
-    # for i in p:
-    #     i.join()
-    # print('All threads done.')
     print('Parent process %s.' % os.getpid())
     p_obj = []
     for i in range(len(cci)):

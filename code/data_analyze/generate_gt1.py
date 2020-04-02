@@ -120,7 +120,7 @@ def generate_gt(params):
                 # print(len(pos_mask))
                 # import pdb;pdb.set_trace()
 
-                if len(pos_mask) > 10:
+                if len(pos_mask) > 20:
                     cur_cci.append([df1.iloc[i]['id'], df2.iloc[j]['id'], 1])
                     mp[df1.iloc[i]['id']] = df2.iloc[j]['id']
                     if choice:
