@@ -22,12 +22,12 @@ python ./code/train_mammary.py --dataset 1189 --train_dataset train_dataset2_fak
 --load_pretrained_model 1 \
 --save_model_path checkpoints/mousev1.pth
 
-
+<!-- 
 train_dataset: junk are randomly chosen.
 train_dataset2: 选择负样本，基因交叉后，随机选取共同基因最少5个细胞中的一个
 train_dataset3: 选择负样本，基因交叉后，随机选取共同基因最少5个细胞中的一个 和2的cluster不一样
 train_dataset2_3: 只选了1个基因最少的细胞，所以有很多0
-
+ -->
 
 add dev branch
 
@@ -36,3 +36,8 @@ add dev branch
     train_cluster = [1, 3, 5, 7, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20]
 
 2. 运行generate_gt1.py生成训练所需的正负样本，在mouse_small_intestine/train_dataset/data 文件夹下
+
+mouse_small_intestine: 按照num pairs选择基因和负样本
+mouse_small_intestine2: 选择cluster-cluster的所有pairs
+mouse_small_intestine3: train test 都按照num pairs选择基因和负样本，
+mouse_small_intestine4: train按照num pairs选择基因,test使用cluster-cluster所有pairs

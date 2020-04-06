@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import random
 from sklearn import preprocessing
-
+import re
 from .dataset import TrainSet
 
 
@@ -110,9 +110,17 @@ def load_mouse_mammary_gland(params):
         cci_labels_gt_paths = (dataset / 'data').glob('*gt*.csv')
 
         for file in sorted(cci_labels_gt_paths):
+            ty = re.findall("\d+",file.name)
+            type1 = int(ty[1])
+            type2 = int(ty[2])
             cur_cci_labels = pd.read_csv(file, header=None)
+            # 3, 4记录cell真实id，方便构建cell cell interaction
+            cur_cci_labels[3] = cur_cci_labels[0]
+            cur_cci_labels[4] = cur_cci_labels[1]
             cur_cci_labels[0] = cur_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
             cur_cci_labels[1] = cur_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
+            # import pdb; pdb.set_trace()
+            
             cur_cci_labels = cur_cci_labels.values.tolist()
      
             # if each_dataset_size > 0 and len(cur_cci_labels) > each_dataset_size:
@@ -131,9 +139,16 @@ def load_mouse_mammary_gland(params):
         
         # cur_index = 0
         for file in sorted(cci_labels_junk_paths):
+            ty = re.findall("\d+",file.name)
+            type1 = int(ty[1])
+            type2 = int(ty[2])
+
             junk_cci_labels = pd.read_csv(file, header=None)
+            junk_cci_labels[3] = junk_cci_labels[0]
+            junk_cci_labels[4] = junk_cci_labels[1]
             junk_cci_labels[0] = junk_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
             junk_cci_labels[1] = junk_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
+            
             junk_cci_labels = junk_cci_labels.values.tolist()
 
             junk_cci_labels = np.asarray(junk_cci_labels)
@@ -238,7 +253,8 @@ def load_mouse_mammary_gland(params):
     # import pdb; pdb.set_trace()
 
     # return num_cells, num_genes, num_labels, graph, features, train_cci_labels, train_mask, vali_mask
-    return num_cells, num_genes, 2, graph, features, graph_test, features_test, train_cci_labels, train_mask, vali_mask, test_cci_labels
+    return num_cells, num_genes, 2, graph, features, graph_test, features_test, \
+        train_cci_labels, train_mask, vali_mask, test_cci_labels
 
 
 if __name__ == '__main__':

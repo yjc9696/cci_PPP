@@ -54,7 +54,10 @@ def generate_gt(params):
 
     # prepare cell cell interaction
     cci = pd.read_csv(cluster_cluster_interaction_depleted, header=0, index_col=0)
-
+    enriched = set()
+    for i in range(len(cci)):
+        enriched.add((int(cci.iloc[i]['cluster1']), int(cci.iloc[i]['cluster2'])))
+        enriched.add((int(cci.iloc[i]['cluster2']), int(cci.iloc[i]['cluster1'])))
     # prepare ligand receptor pair
     lcp = pd.read_csv(ligand_receptor_path, header=0, index_col=0)
     ligand = lcp['ligand'].tolist()
@@ -82,11 +85,15 @@ def generate_gt(params):
     df_mask2['cell'] = df['cell'].tolist()
 
     mp = dict()
-    def one_process(m):
-        type1 = cci.iloc[m]['cluster1']
-        type2 = cci.iloc[m]['cluster2']
-        print(type1, type2)
+    def one_process(type1, type2):
+        # type1 = cci.iloc[m]['cluster1']
+        # type2 = cci.iloc[m]['cluster2']
+        type1 = int(type1)
+        type2 = int(type2)
+        
         if (type1 not in clusters) or (type2 not in clusters):
+            return
+        if (type1, type2) in enriched:
             return
 
         print(f'cluster: {type1}, {type2}')
@@ -109,9 +116,11 @@ def generate_gt(params):
 
     print('Parent process %s.' % os.getpid())
     p_obj = []
-    for i in range(len(cci)):
-        p = Process(target=one_process, args=(i,))
-        p_obj.append(p)
+    for i in sorted(clusters):
+        for j in sorted(clusters):
+            if i < j:
+                p = Process(target=one_process, args=(i,j))
+                p_obj.append(p)
     print('Waiting for all subprocesses done...')
     for i in p_obj:
         i.start()

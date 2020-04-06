@@ -14,7 +14,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 # self-defined
 from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
-from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2
+from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2, FocalLoss
 from torchlight import set_seed
 import random
 
@@ -32,8 +32,9 @@ class Trainer:
         self.save_model_path = params.save_model_path
 
         # data
-        self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, self.graph_test, self.features_test, \
-            self.train_dataset, self.train_mask, self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
+        self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, \
+            self.graph_test, self.features_test, self.train_dataset, self.train_mask, \
+                self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
         # self.features = self.vae.get_hidden(self.features)
         # model
@@ -61,6 +62,10 @@ class Trainer:
         self.model.to(self.device)
         self.features = self.features.to(self.device)
         self.features_test = self.features_test.to(self.device)
+
+        self.graph = self.graph_test
+        self.features = self.features_test
+
         self.train_mask = self.train_mask.to(self.device)
         self.vali_mask = self.vali_mask.to(self.device)
         self.train_dataset = self.train_dataset.to(self.device)
@@ -77,6 +82,7 @@ class Trainer:
         self.model.train()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr)
         loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
+        # loss_fn = FocalLoss()
 
         ll_loss = 1e5
         
@@ -188,6 +194,13 @@ if __name__ == '__main__':
                         help="root path of the data dir")
     parser.add_argument("--cell_data_path", type=str, default='mouse_small_intestine_1189_data.csv',
                         help="cell data gene")
+                        
+    parser.add_argument("--cluster_cluster_interaction_enriched", type=str, default='mouse_small_intestine_1189_cluster_cluster_interaction_enriched.csv',
+                        help="cluster - cluster interaction enriched")
+    parser.add_argument("--cluster_cluster_interaction_depleted", type=str, default='mouse_small_intestine_1189_cluster_cluster_interaction_depleted.csv',
+                        help="cluster - cluster interaction depleted")
+    parser.add_argument("--cell_cluster", type=str, default='mouse_small_intestine_1189_cellcluster.csv',
+                        help="cell belongs to which cluster")
     params = parser.parse_args()
     print(params)
     

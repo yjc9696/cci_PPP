@@ -95,13 +95,10 @@ def generate_gt(params):
         cur_cci_junk_b2d = []
         num = 0
         choice = random.randint(0, 1)
-        for i in range(len(df1)):
-            # print(num)
-            # if num > 1:
-            #     break
-            for j in range(len(df2)):
-                pair1 = df1.iloc[i].fillna(0)  # series
-                pair2 = df2.iloc[j].fillna(0)
+        for i, rowi in df1.iterrows():
+            for j, rowj in df2.iterrows():
+                pair1 = rowi.fillna(0)  # series
+                pair2 = rowj.fillna(0)
                 pair1 = pair1.drop(['type', 'id', 'cell'])
                 pair2 = pair2.drop(['type', 'id', 'cell'])
                 assert np.sum(pair1.index[:len(pair1) // 2] == pair2.index[len(pair2) // 2:]) == len(
@@ -121,24 +118,23 @@ def generate_gt(params):
                 # import pdb;pdb.set_trace()
 
                 if len(pos_mask) > 20:
-                    cur_cci.append([df1.iloc[i]['id'], df2.iloc[j]['id'], 1])
-                    mp[df1.iloc[i]['id']] = df2.iloc[j]['id']
+                    cur_cci.append([rowi['id'], rowj['id'], 1])
                     if choice:
-                        a, c = find_junk(df, df1.iloc[i]['id'], pair2_mask, pos_mask, clusters, type1, type2)
+                        a, c = find_junk(df, rowi['id'], pair2_mask, pos_mask, clusters, type1, type2)
                     else:
                         # b, d = find_junk(df, df2.iloc[j]['id'], pair1_mask, pos_mask, clusters)
-                        a, c = find_junk(df, df2.iloc[j]['id'], pair1_mask, pos_mask, clusters, type1, type2)
+                        a, c = find_junk(df, rowj['id'], pair1_mask, pos_mask, clusters, type1, type2)
                     cur_cci_junk_a2c.append([a, c, 0])
                     # cur_cci_junk_b2d.append([b, d, 0])
                     num += 1
 
         with open(cci_labels_gt_path.format(dataset_path, type1, type2), 'w', encoding='utf-8') as f:
-            print(f"cur cci {len(cur_cci)}")
+            print(f"cur cci {type1} {type2} -> {len(cur_cci)}")
             for cci_label in cur_cci:
                 f.write(f'{(cci_label[0])},{(cci_label[1])},{int(cci_label[2])}\r\n')
 
         with open(cci_labels_junk_path.format(dataset_path, type1, type2), 'w', encoding='utf-8') as f:
-            print(f"cur cci junk {len(cur_cci_junk_a2c)}")
+            print(f"cur cci junk {type1} {type2} -> {len(cur_cci_junk_a2c)}")
             for cci_label in cur_cci_junk_a2c:
                 f.write(f'{(cci_label[0])},{(cci_label[1])},{int(cci_label[2])}\r\n')
 
@@ -162,6 +158,9 @@ def generate_gt(params):
     # for i in p:
     #     i.join()
     # print('All threads done.')
+    # for i in range(len(cci)):
+    #     print(f'process: {i} / {len(cci)}')
+    #     one_process(i)
     print('Parent process %s.' % os.getpid())
     p_obj = []
     for i in range(len(cci)):
@@ -184,7 +183,8 @@ def find_junk(df, id1, pair_mask, pos_mask, clusters, type1, type2):
     :param pos_mask: the position of gene should be 0
     :return: cell1, junk_cell
     """
-
+    
+    # print(f'junk func: {type1}, {type2}')
     mask = [pair_mask[i] for i in pos_mask]
     df_junk = df[mask]
     real_idx = list()
@@ -192,20 +192,26 @@ def find_junk(df, id1, pair_mask, pos_mask, clusters, type1, type2):
     df_junk = df_junk.applymap(lambda x: 1 if x > 0 else 0)
 
     s = df_junk.apply(lambda x: x.sum(), axis=1)
-    # s.index = list(range(len(s)))
-
-    for i in range(len(df_junk)):
-        cur_id = s.idxmin()
-        s.loc[cur_id] = 1e5
-        # import pdb;pdb.set_trace()
-        cur_type = int(df.loc[cur_id]['type'])
+    # 细胞sum的含量，按cellid依次排列
+    s = s.tolist()
+    new_s = list()
+    idx2id = dict()
+    idx = 0
+    cellid = 0
+    for cur_type in df['type'].tolist():
         if cur_type in clusters and cur_type != type1 and cur_type != type2:
-            real_idx.append(df.loc[cur_id]['id'])
-            if len(real_idx) > 10:
-                break
-    rand = random.randint(0, len(real_idx) - 1)
-
-    return id1, real_idx[rand]
+            idx2id[idx] = cellid
+            idx += 1
+            new_s.append(s[cellid])
+        cellid += 1
+    s = np.array(new_s)
+    assert len(s) == len(idx2id), 'error with junk'
+    re_ne = 20
+    ids = np.argpartition(s, re_ne)[:re_ne]
+    cur_id = ids[np.random.randint(len(ids), size=1)[0]]
+    id2 = idx2id[cur_id]
+    # print('end junk')
+    return id1, id2
 
 
 if __name__ == '__main__':
