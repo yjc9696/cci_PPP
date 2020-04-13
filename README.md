@@ -30,6 +30,8 @@ train_dataset2_3: 只选了1个基因最少的细胞，所以有很多0
  -->
 
 add dev branch
+dev: 使用num of pairs选择的正负样本
+dev2: 进行新的工作迭代
 
 1. 运行split_dataset将mouse small intesine分成测试集和训练集，需要先建好train_dataset test_dataset文件夹，每个文件夹会有cell-data和cell-cluster文件，将ligand-receptor-gene，cluster-interaction文件也拷贝进traindataset和testdataset中。
     test_cluster = [2, 4, 6, 8, 11, 12]
