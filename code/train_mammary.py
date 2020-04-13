@@ -17,6 +17,7 @@ from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
 from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2, FocalLoss
 from torchlight import set_seed
 import random
+from evaluate import Evaluate
 
 class Trainer:
     def __init__(self, params):
@@ -35,6 +36,8 @@ class Trainer:
         self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, \
             self.graph_test, self.features_test, self.train_dataset, self.train_mask, \
                 self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
+        # evaluate
+        self.eval = Evaluate(params)
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
         # self.features = self.vae.get_hidden(self.features)
         # model
@@ -74,6 +77,7 @@ class Trainer:
         self.train_dataloader = DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         self.loss_weight = torch.Tensor(params.loss_weight).to(self.device)
+        
 
     def train(self):
         if self.load_pretrained_model:
@@ -117,6 +121,7 @@ class Trainer:
                     precision, recall, test_loss = self.test(self.test_dataset)
                     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
 
+                    
     def evaluate(self, mask):
         self.model.eval()
         eval_dataset = self.train_dataset[mask]
@@ -139,6 +144,9 @@ class Trainer:
         _, indices = torch.max(logits, dim=1)
         # print(len(indices), indices.sum().item())
         # import pdb; pdb.set_trace()
+        indices_numpy = indices.cpu().clone().numpy()
+        test_dataset_numpy = test_dataset.cpu().clone().numpy()
+        # self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         return precision[1], recall[1], loss
 
@@ -188,6 +196,7 @@ if __name__ == '__main__':
                         help="nothing, for debug")
     parser.add_argument("--each_dataset_size", type=int, default=0,
                         help="0 represent all")
+
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")
     parser.add_argument("--data_dir", type=str, default='mouse_small_intestine',

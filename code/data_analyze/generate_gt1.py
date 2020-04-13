@@ -20,13 +20,13 @@ def generate_gt(params):
     dataset_path = mouse_data_path / params.dataset # train_dataset
     clusters = params.clusters
 
-    ligand_receptor_path = mouse_data_path / params.ligand_receptor_gene
+    ligand_receptor_path = dataset_path / params.ligand_receptor_gene
 
     cell2cluster_path = dataset_path / params.cell_cluster
     cell_data_path = dataset_path / params.cell_data
 
-    cluster_cluster_interaction_enriched = mouse_data_path / params.cluster_cluster_interaction_enriched
-    cluster_cluster_interaction_depleted = mouse_data_path / params.cluster_cluster_interaction_depleted
+    cluster_cluster_interaction_enriched = dataset_path / params.cluster_cluster_interaction_enriched
+    cluster_cluster_interaction_depleted = dataset_path / params.cluster_cluster_interaction_depleted
 
     cci_labels_gt_path = '{}/data/mouse_small_intestine_1189_cci_labels_gt_{}_{}.csv'
     cci_labels_junk_path = '{}/data/mouse_small_intestine_1189_cci_labels_junk_{}_{}.csv'
@@ -76,6 +76,7 @@ def generate_gt(params):
 
     mp = dict()
     def one_process(m):
+        scores = list()
         type1 = cci.iloc[m]['cluster1']
         type2 = cci.iloc[m]['cluster2']
         print(type1, type2)
@@ -116,7 +117,11 @@ def generate_gt(params):
                 pos_mask = np.where(tmp > 0)[0].tolist()
                 # print(len(pos_mask))
                 # import pdb;pdb.set_trace()
-
+                # pair[3] = pair[0]*pair[1]
+#                 scores.append(len(pos_mask))
+        #         scores.append(pair[3].sum())
+        # scores_df = pd.DataFrame(scores)
+        # print(scores_df.describe())
                 if len(pos_mask) > 20:
                     cur_cci.append([rowi['id'], rowj['id'], 1])
                     if choice:
@@ -233,6 +238,8 @@ if __name__ == '__main__':
                         help="cluster - cluster interaction depleted")
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")
+    # parser.add_argument("--clusters", nargs='+', type=int, default=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45],
+    #                     help="cluster used to train")
     parser.add_argument("--clusters", nargs='+', type=int, default=[1, 3, 5, 7, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20],
                         help="cluster used to train")
     # parser.add_argument("--clusters", nargs='+', type=int, default=[2, 4, 6, 8, 11, 12],
@@ -242,8 +249,13 @@ if __name__ == '__main__':
     print(params)
 
     set_seed(params.random_seed)
+    # split the small intestine
     # test_cluster = [2, 4, 6, 8, 11, 12]
     # train_cluster = [1, 3, 5, 7, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20]
+
+    # small intestine
+    # train_cluster = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+    # test_cluster = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45]
 
     generate_gt(params)
 

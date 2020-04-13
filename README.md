@@ -31,13 +31,15 @@ train_dataset2_3: 只选了1个基因最少的细胞，所以有很多0
 
 add dev branch
 
-1. 运行split_dataset将mouse small intesine分成测试集和训练集，需要先建好train_dataset test_dataset文件夹，每个文件夹会有cell-data和cell-cluster文件。
+1. 运行split_dataset将mouse small intesine分成测试集和训练集，需要先建好train_dataset test_dataset文件夹，每个文件夹会有cell-data和cell-cluster文件，将ligand-receptor-gene，cluster-interaction文件也拷贝进traindataset和testdataset中。
     test_cluster = [2, 4, 6, 8, 11, 12]
     train_cluster = [1, 3, 5, 7, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20]
 
-2. 运行generate_gt1.py生成训练所需的正负样本，在mouse_small_intestine/train_dataset/data 文件夹下
+2. 运行generate_gt1.py生成训练所需的正负样本，在projectpath/data/mouse_small_intestine/train_dataset/data 文件夹下
 
-mouse_small_intestine: 按照num pairs选择基因和负样本
+mouse_small_intestine: train, test 都按照num pairs选择基因和负样本
 mouse_small_intestine2: 选择cluster-cluster的所有pairs
 mouse_small_intestine3: train test 都按照num pairs选择基因和负样本，
 mouse_small_intestine4: train按照num pairs选择基因,test使用cluster-cluster所有pairs
+
+small_intestine_bone_marrow: traindataset是small intestine， test dataset是 bone marrow

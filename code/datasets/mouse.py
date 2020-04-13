@@ -24,7 +24,7 @@ def load_mouse_mammary_gland(params):
     train_dataset = mouse_data_path / params.train_dataset
     test_dataset = mouse_data_path / params.test_dataset
 
-    ligand_receptor_path = mouse_data_path / params.ligand_receptor_gene
+    ligand_receptor_path = train_dataset / params.ligand_receptor_gene
 
     # prepare the ligand and receptor genes.
     all_dataset = [train_dataset, test_dataset]
@@ -94,6 +94,7 @@ def load_mouse_mammary_gland(params):
         # load data file then update graph 
         df = pd.read_csv(data_path, index_col=0)  # (gene, cell)
         df = df.fillna(0)
+
         df = df.transpose(copy=True)  # (cell, gene)
 
         df = df.rename(columns=gene2id)
@@ -105,14 +106,11 @@ def load_mouse_mammary_gland(params):
 
 
         # stores the pairs that have relation
-
         # indexs = list()
         cci_labels_gt_paths = (dataset / 'data').glob('*gt*.csv')
 
         for file in sorted(cci_labels_gt_paths):
-            ty = re.findall("\d+",file.name)
-            type1 = int(ty[1])
-            type2 = int(ty[2])
+
             cur_cci_labels = pd.read_csv(file, header=None)
             # 3, 4记录cell真实id，方便构建cell cell interaction
             cur_cci_labels[3] = cur_cci_labels[0]
@@ -133,15 +131,10 @@ def load_mouse_mammary_gland(params):
             cur_cci_labels = cur_cci_labels.tolist()
             cci_labels += cur_cci_labels
 
-            # import pdb; pdb.set_trace()
-
         cci_labels_junk_paths = (dataset / 'data').glob('*junk*.csv')
         
         # cur_index = 0
         for file in sorted(cci_labels_junk_paths):
-            ty = re.findall("\d+",file.name)
-            type1 = int(ty[1])
-            type2 = int(ty[2])
 
             junk_cci_labels = pd.read_csv(file, header=None)
             junk_cci_labels[3] = junk_cci_labels[0]
