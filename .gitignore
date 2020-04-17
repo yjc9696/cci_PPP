@@ -133,3 +133,8 @@ dmypy.json
 /checkpoints
 /data_v1
 data.zip
+data.tar.gz
+data_backup.tar
+*.tar
+*.tar.gz
+/tmp

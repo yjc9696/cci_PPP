@@ -93,9 +93,9 @@ def generate_gt(params):
 
     mp = dict()
 
-    def one_process(begin, end, lock:Lock):
+    def one_process(begin, end, lock):
 
-        df1 = df_mask1.iloc[begin, end]
+        df1 = df_mask1.iloc[begin: end]
         df2 = df_mask2
 
         cur_cci = []
@@ -141,10 +141,11 @@ def generate_gt(params):
 
         try:
             lock.acquire()
+            print(f'{begin} -> {end} is done.')
             with open(analyze_path, 'a+', encoding='utf-8') as f:
                 for line in cur_cci:
                     f.write(f'{int(line[0])},{int(line[1])},{int(line[2])},{int(line[3])},{int(line[4])},'
-                            f'{int(line[5])},{line[6]},{line[7]},{line[8]},{line[9]}\n')
+                            f'{int(line[5])},{line[6]},{line[7]},"{line[8]}","{line[9]}"\n')
         except Exception as e:
             print(e)
         finally:
@@ -153,9 +154,12 @@ def generate_gt(params):
 
 
     print('Parent process %s.' % os.getpid())
+    with open(analyze_path, 'w', encoding='utf-8') as f:
+        f.write('id1,id2,type1,type2,cci,mask_num,score,max_score,cell_name1,cell_name2\n')
     lock = Lock()
     p_obj = []
-    num = len(cci)
+    num = len(df)
+    # num = 40
     m = 20
     for i in range(m):
         begin = num // m * i
