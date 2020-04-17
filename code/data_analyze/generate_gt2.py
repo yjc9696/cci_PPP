@@ -1,5 +1,6 @@
 #! /usr/local/bin/python
 # ! -*- encoding:utf-8 -*-
+# 生成mask>20的为正样本，其余都为负样本
 import argparse
 from pathlib import Path
 import pandas as pd

@@ -45,7 +45,7 @@ class GAT(nn.Module):
         h = self.linear1(torch.cat([h[x1], h[x2], torch.abs(h[x1]-h[x2])], 1))
         # h_src = self.linear1(h[x1] + h[x2])
         # mouse doesn't have bn
-        h = self.dense1_bn(h)
+        # h = self.dense1_bn(h)
         h = F.relu(h)
         h = self.linear2(h)
         return h

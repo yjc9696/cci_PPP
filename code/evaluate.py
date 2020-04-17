@@ -6,6 +6,7 @@ to construct the cci throgh the result
 from pathlib import Path 
 import numpy as np
 import pandas as pd
+import random
 
 class Evaluate:
     def __init__(self, params):
@@ -22,8 +23,8 @@ class Evaluate:
         cell2cluster_path = test_dataset / params.cell_cluster
         cell_data_path = test_dataset / params.cell_data_path
         # ligand_receptor_path = mouse_data_path / params.ligand_receptor_gene
-        cluster2cluster_enriched_path = mouse_data_path / params.cluster_cluster_interaction_enriched
-        cluster2cluster_depleted_path = mouse_data_path / params.cluster_cluster_interaction_depleted
+        cluster2cluster_enriched_path = test_dataset / params.cluster_cluster_interaction_enriched
+        cluster2cluster_depleted_path = test_dataset / params.cluster_cluster_interaction_depleted
 
         # cell * gene
         self.cell_data = pd.read_csv(cell_data_path, index_col=0).fillna(0).transpose()
@@ -60,27 +61,19 @@ class Evaluate:
         """evaluate the predict result with 10% percentage
         
         Args:
-            cci_predict (np.array): [cell1, cell2, relation, cell_id1, cell_id2]
+            cci_gt (np.array pair_num*5): [cell1, cell2, relation, cell_id1, cell_id2]
+            cci_predict (np.array, pair_num * 1): [labels]
         """
-        
+        # indices predicted positive by the model
         nonzero = cci_predict.nonzero()[0]
+        # get these pairs
         cci_gt_nonzero = cci_gt[nonzero]
         col = cci_gt_nonzero[:, 3]
         row = cci_gt_nonzero[:, 4]
 
-        ladj = np.zeros((len(self.cell_data), len(self.cell_data)))
-        ladj[row] += 1
-        ladj[:, col] += 1
-        ladj = np.where(ladj>1, 1, 0)
-
-        radj = np.zeros((len(self.cell_data), len(self.cell_data)))
-        radj[col] += 1
-        radj[:, row] += 1
-        radj = np.where(radj>1, 1, 0)
-
         adj = np.zeros((len(self.cell_data), len(self.cell_data)))
-        adj = ladj + radj
-        adj = np.where(adj>0, 1, 0)
+        adj[row, col] = 1
+        adj[col, row] = 1
 
         # import pdb; pdb.set_trace()
         for pair in self.cluster_pairs_enriched:
@@ -88,6 +81,7 @@ class Evaluate:
             idx1 = self.cluster2cell[type1]
             idx2 = self.cluster2cell[type2]
             total = len(idx1) * len(idx2)
+            # import pdb; pdb.set_trace()
             hit = adj[idx1][:, idx2].sum()
             print(f'enriched: hit {hit}, total {total}, ratio {hit/total} ')
         
@@ -99,3 +93,78 @@ class Evaluate:
             hit = adj[idx1][:, idx2].sum()
             print(f'depleted: hit {hit}, total {total}, ratio {hit/total} ')
         
+    def evaluate_with_permuation(self, cci_predict, cci_gt, num=10000):
+        """evaluate the predicted result with permuation
+        
+        Args:
+            cci_gt (np.array pair_num*5): [cell1, cell2, relation, cell_id1, cell_id2]
+            cci_predict (np.array, pair_num * 1): [labels]
+        """
+        # indices predicted positive by the model
+        nonzero = cci_predict.nonzero()[0]
+        # get these pairs
+        cci_gt_nonzero = cci_gt[nonzero]
+        col = cci_gt_nonzero[:, 3]
+        row = cci_gt_nonzero[:, 4]
+
+        adj = np.zeros((len(self.cell_data), len(self.cell_data)))
+        adj[row, col] = 1
+        adj[col, row] = 1
+
+        # import pdb; pdb.set_trace()
+        for pair in self.cluster_pairs_enriched:
+            type1, type2 = pair
+            idx1 = self.cluster2cell[type1]
+            idx2 = self.cluster2cell[type2]
+            total = len(idx1) * len(idx2)
+            # import pdb; pdb.set_trace()
+            hit = adj[idx1][:, idx2].sum()
+            distribution = np.array(self.permuation(adj, idx1, idx2))
+            dis = len(np.where(distribution>hit)[0])
+
+            print(f'enriched: hit {dis}, total {num}, ratio {dis/num} ')
+        
+        for pair in self.cluster_pairs_depleted:
+            type1, type2 = pair
+            idx1 = self.cluster2cell[type1]
+            idx2 = self.cluster2cell[type2]
+            total = len(idx1) * len(idx2)
+            # import pdb; pdb.set_trace()
+            hit = adj[idx1][:, idx2].sum()
+            distribution = np.array(self.permuation(adj, idx1, idx2, num))
+            dis = len(np.where(distribution>hit)[0])
+
+            print(f'depleted: hit {dis}, total {num}, ratio {dis/num} ')
+        
+    def permuation(self, adj, idx1, idx2, num=10000):
+        """permuation the result
+        
+        Args:
+            adj (np.array): shape: (num_cells, num_cells)
+            idx1 (np.array): shape: (N1,)
+            idx2 (np.array): shape: (N2, )
+            num (int, optional): iteration numbers. Defaults to 10000.
+        """
+        ans = list()
+        cells = len(adj)
+        # import pdb; pdb.set_trace()
+        def swap(cells, idx1, idx2):
+            init = list(range(cells))
+            for j in list(range(cells))[::-1]:
+                idx = random.randint(0,j)
+                tmp = init[j]
+                init[j] = init[idx]
+                init[idx] = tmp
+            l1 = list()
+            for j in idx1:
+                l1.append(init[j])
+            l2 = list()
+            for j in idx2:
+                l2.append(init[j])
+            return l1, l2
+        
+        for i in range(num):
+            idx1, idx2 = swap(cells, idx1, idx2)
+            hit = adj[idx1][:, idx2].sum()
+            ans.append(hit)
+        return ans

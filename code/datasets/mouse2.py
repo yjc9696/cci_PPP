@@ -111,7 +111,7 @@ def load_mouse_mammary_gland(params):
 
         for file in sorted(cci_labels_gt_paths):
 
-            cur_cci_labels = pd.read_csv(file, header=None, usecols=[0,1,2])
+            cur_cci_labels = pd.read_csv(file, header=None)
             # 3, 4记录cell真实id，方便构建cell cell interaction
             cur_cci_labels[3] = cur_cci_labels[0]
             cur_cci_labels[4] = cur_cci_labels[1]
@@ -136,7 +136,7 @@ def load_mouse_mammary_gland(params):
         # cur_index = 0
         for file in sorted(cci_labels_junk_paths):
 
-            junk_cci_labels = pd.read_csv(file, header=None, usecols=[0,1,2])
+            junk_cci_labels = pd.read_csv(file, header=None)
             junk_cci_labels[3] = junk_cci_labels[0]
             junk_cci_labels[4] = junk_cci_labels[1]
             junk_cci_labels[0] = junk_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
