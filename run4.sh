@@ -10,12 +10,10 @@ python ./codes/train_mammary.py --data_dir mouse_small_intestine2 \
 --n_epochs 10000 \
 --batch_size 256 \
 --dropout 0.1 \
---loss_weight 10 1 \
+--loss_weight 1 1 \
 --n_layers 2 \
 --pretrained_model_path checkpoints/best_modelv4.pth \
---load_pretrained_model 1 \
+--load_pretrained_model 0 \
 --save_model_path checkpoints/best_modelv4.pth \
 --just_train 0 \
 --each_dataset_size 0
-
-

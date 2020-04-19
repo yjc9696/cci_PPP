@@ -41,25 +41,25 @@ class Trainer:
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
         # self.features = self.vae.get_hidden(self.features)
         # model
-        # self.model = GraphSAGE(in_feats=params.dense_dim,
-        #                        n_hidden=params.hidden_dim,
-        #                        n_classes=self.num_classes,
-        #                        n_layers=params.n_layers,
-        #                        activation=F.relu,
-        #                        dropout=params.dropout,
-        #                        aggregator_type=params.aggregator_type,
-        #                        num_genes=self.num_genes)
+        self.model = GraphSAGE(in_feats=params.dense_dim,
+                               n_hidden=params.hidden_dim,
+                               n_classes=self.num_classes,
+                               n_layers=params.n_layers,
+                               activation=F.relu,
+                               dropout=params.dropout,
+                               aggregator_type=params.aggregator_type,
+                               num_genes=self.num_genes)
         # self.model = GCN(
         #                  in_feats=params.dense_dim,
         #                  n_hidden=params.hidden_dim,
         #                  n_classes=self.num_classes,
         #                  n_layers=params.n_layers,
         #                  activation=F.relu)
-        self.model = GAT(in_feats=params.dense_dim,
-                         n_hidden=params.hidden_dim,
-                         n_classes=self.num_classes,
-                         n_layers=params.n_layers,
-                         activation=F.relu)
+        # self.model = GAT(in_feats=params.dense_dim,
+        #                  n_hidden=params.hidden_dim,
+        #                  n_classes=self.num_classes,
+        #                  n_layers=params.n_layers,
+        #                  activation=F.relu)
         self.graph.readonly(readonly_state=True)
         self.graph_test.readonly(readonly_state=True)
         self.model.to(self.device)
@@ -85,8 +85,8 @@ class Trainer:
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr)
-        loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
-        # loss_fn = FocalLoss()
+        # loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
+        loss_fn = FocalLoss()
 
         ll_loss = 1e5
         
@@ -147,7 +147,7 @@ class Trainer:
         indices_numpy = indices.cpu().clone().numpy()
         test_dataset_numpy = test_dataset.cpu().clone().numpy()
         # self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
-        self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
+        # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         return precision[1], recall[1], loss
 
@@ -197,6 +197,8 @@ if __name__ == '__main__':
                         help="nothing, for debug")
     parser.add_argument("--each_dataset_size", type=int, default=0,
                         help="0 represent all")
+    parser.add_argument("--score_limit", type=int, default=50,
+                        help="only choose the score above limit as postive samples")
 
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")

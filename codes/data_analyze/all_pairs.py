@@ -1,5 +1,6 @@
 #! /usr/local/bin/python
 # ! -*- encoding:utf-8 -*-
+# python codes/data_analyze/all_pairs.py
 # 生成所有pair的分析数据，格式为
 # cell1, cell2, cluster1, cluster2, cci(1: enrich, 0: depleted, -1: unknown),
 # num_masks, scores, max_score, cell1_name, cell2_name
