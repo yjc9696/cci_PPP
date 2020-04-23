@@ -95,10 +95,10 @@ def generate_gt(params):
     mp = dict()
 
     def one_process(begin, end, lock):
-
+        
         df1 = df_mask1.iloc[begin: end]
         df2 = df_mask2
-
+        print(f'begin generate {begin}->{end}, {len(df1)*len(df2)}')
         cur_cci = []
 
         for i, rowi in df1.iterrows():

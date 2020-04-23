@@ -202,7 +202,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")
-    parser.add_argument("--data_dir", type=str, default='mouse_small_intestine',
+    parser.add_argument("--data_dir", type=str, default='small_intestine_bone_marrow',
                         help="root path of the data dir")
     parser.add_argument("--cell_data_path", type=str, default='mouse_small_intestine_1189_data.csv',
                         help="cell data gene")
