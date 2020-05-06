@@ -91,7 +91,7 @@ def generate_gt(params):
     df_mask2['type'] = df['type'].tolist()
     df_mask2['id'] = df['id'].tolist()
     df_mask2['cell'] = df['cell'].tolist()
-
+    assert df_mask1['id'].tolist() == df_mask2['id'].tolist(), 'id error'
     mp = dict()
 
     def one_process(begin, end, lock):
@@ -161,7 +161,7 @@ def generate_gt(params):
     p_obj = []
     num = len(df)
     # num = 40
-    m = 20
+    m = 40
     for i in range(m):
         begin = num // m * i
         end = num // m * (i+1)
@@ -181,21 +181,21 @@ def generate_gt(params):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Analyze marrow gene')
     parser.add_argument("--random_seed", type=int, default=10086)
-    parser.add_argument("--data_dir", type=str, default='mouse_small_intestine',
+    parser.add_argument("--data_dir", type=str, default='mouse_bone_marrow',
                         help="root path of the data dir")
     parser.add_argument("--dataset", type=str, default='train_dataset',
                         help=" dataset")
     # parser.add_argument("--dataset", type=str, default='test_dataset',
     #                     help="test dataset")
-    parser.add_argument("--cell_data", type=str, default='mouse_small_intestine_1189_data.csv',
+    parser.add_argument("--cell_data", type=str, default='mouse_bone_marrow_911_data.csv',
                         help="cell data gene")
-    parser.add_argument("--cell_cluster", type=str, default='mouse_small_intestine_1189_cellcluster.csv',
+    parser.add_argument("--cell_cluster", type=str, default='mouse_bone_marrow_911_cellcluster.csv',
                         help="cell belongs to which cluster")
     parser.add_argument("--cluster_cluster_interaction_enriched", type=str,
-                        default='mouse_small_intestine_1189_cluster_cluster_interaction_enriched.csv',
+                        default='mouse_bone_marrow_911_cluster_cluster_interaction_enriched.csv',
                         help="cluster - cluster interaction enriched")
     parser.add_argument("--cluster_cluster_interaction_depleted", type=str,
-                        default='mouse_small_intestine_1189_cluster_cluster_interaction_depleted.csv',
+                        default='mouse_bone_marrow_911_cluster_cluster_interaction_depleted.csv',
                         help="cluster - cluster interaction depleted")
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     # parser.add_argument("--clusters", nargs='+', type=int, default=[2, 4, 6, 8, 11, 12],
     #                     help="cluster used to test")
 
-    parser.add_argument("--analyze_file", type=str, default='mouse_small_intestine_1189_analyze.csv',
+    parser.add_argument("--analyze_file", type=str, default='mouse_bone_marrow_911_analyze.csv',
                         help="the file to store the result")
 
     params = parser.parse_args()

@@ -132,7 +132,7 @@ class Evaluate:
             # import pdb; pdb.set_trace()
             hit = adj[idx1][:, idx2].sum()
             distribution = np.array(self.permuation(adj, idx1, idx2, num))
-            dis = len(np.where(distribution>hit)[0])
+            dis = len(np.where(distribution>hit)[0]) # larger than original
 
             print(f'depleted: hit {dis}, total {num}, ratio {dis/num} ')
         

@@ -6,9 +6,9 @@ class TrainSet(Dataset):
         self.dataset = dataset
 
     def __getitem__(self, index):
-        type1, type2, label, _, _ = self.dataset[index]
+        type1, type2, label, score,  _, _ = self.dataset[index]
         
-        return type1, type2, label
+        return type1, type2, label, score
 
     def __len__(self):
         return len(self.dataset)

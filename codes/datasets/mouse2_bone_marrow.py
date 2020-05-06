@@ -19,8 +19,8 @@ from .dataset import TrainSet
 
 
 
-def load_mouse_mammary_gland(params):
-    print('using mouse2.py')
+def load_mouse_mammary_gland_bone_marrow(params):
+    print('using mouse2_bone_marrow.py')
     random_seed = params.random_seed
     dense_dim = params.dense_dim
     score_limit = params.score_limit
@@ -296,4 +296,4 @@ if __name__ == '__main__':
     params = parser.parse_args()
     print(params)
 
-    load_mouse_mammary_gland(params)
+    load_mouse_mammary_gland_bone_marrow(params)

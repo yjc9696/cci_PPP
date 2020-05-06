@@ -13,7 +13,7 @@ import sklearn
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 # self-defined
-from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
+from datasets import load_mouse_mammary_gland, load_tissue, TrainSet, load_mouse_mammary_gland_bone_marrow
 from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2, FocalLoss
 from torchlight import set_seed
 import random
@@ -35,7 +35,7 @@ class Trainer:
         # data
         self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, \
             self.graph_test, self.features_test, self.train_dataset, self.train_mask, \
-                self.vali_mask, self.test_dataset = load_mouse_mammary_gland(params)
+                self.vali_mask, self.test_dataset = load_mouse_mammary_gland_bone_marrow(params)
         # evaluate
         self.eval = Evaluate(params)
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
@@ -226,14 +226,14 @@ if __name__ == '__main__':
                         help="cluster - cluster interaction depleted")
     parser.add_argument("--data_dir", type=str, default='small_intestine_bone_marrow',
                         help="root path of the data dir")
-    parser.add_argument("--cell_data_path", type=str, default='mouse_small_intestine_1189_data.csv',
+    parser.add_argument("--cell_data_path", type=str, default='mouse_bone_marrow_911_data.csv',
                         help="cell data gene")
                         
-    parser.add_argument("--cluster_cluster_interaction_enriched", type=str, default='mouse_small_intestine_1189_cluster_cluster_interaction_enriched.csv',
+    parser.add_argument("--cluster_cluster_interaction_enriched", type=str, default='mouse_bone_marrow_911_cluster_cluster_interaction_enriched.csv',
                         help="cluster - cluster interaction enriched")
-    parser.add_argument("--cluster_cluster_interaction_depleted", type=str, default='mouse_small_intestine_1189_cluster_cluster_interaction_depleted.csv',
+    parser.add_argument("--cluster_cluster_interaction_depleted", type=str, default='mouse_bone_marrow_911_cluster_cluster_interaction_depleted.csv',
                         help="cluster - cluster interaction depleted")
-    parser.add_argument("--cell_cluster", type=str, default='mouse_small_intestine_1189_cellcluster.csv',
+    parser.add_argument("--cell_cluster", type=str, default='mouse_bone_marrow_911_cellcluster.csv',
                         help="cell belongs to which cluster")
     params = parser.parse_args()
     print(params)
