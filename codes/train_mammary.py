@@ -142,8 +142,8 @@ class Trainer:
         # import pdb; pdb.set_trace()
         indices_numpy = indices.cpu().clone().numpy()
         test_dataset_numpy = test_dataset.cpu().clone().numpy()
-        self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
-        self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
+        # self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
+        # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         return precision[1], recall[1], loss
 
