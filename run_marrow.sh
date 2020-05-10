@@ -1,0 +1,21 @@
+python ./codes/train_mammary.py --data_dir mouse_bone_marrow1 \
+--train_dataset train_dataset \
+--test_dataset test_dataset \
+--cell_data_path mouse_bone_marrow_911_data.csv \
+--ligand_receptor_gene mouse_ligand_receptor_pair.csv \
+--cluster_cluster_interaction_enriched mouse_bone_marrow_911_cluster_cluster_interaction_enriched.csv \
+--cluster_cluster_interaction_depleted mouse_bone_marrow_911_cluster_cluster_interaction_depleted.csv \
+--cell_cluster mouse_bone_marrow_911_cellcluster.csv \
+--gpu 0 \
+--dense_dim 80 \
+--hidden_dim 40 \
+--lr 1e-3 \
+--n_epochs 500 \
+--batch_size 32 \
+--dropout 0.2 \
+--loss_weight 1 1 \
+--n_layers 2 \
+--pretrained_model_path checkpoints/best_modelv_marrow.pth \
+--load_pretrained_model 0 \
+--save_model_path checkpoints/best_modelv_marrow.pth \
+--score_limit 19

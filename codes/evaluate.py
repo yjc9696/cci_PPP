@@ -37,6 +37,7 @@ class Evaluate:
         self.cluster2cluster_depleted = pd.read_csv(cluster2cluster_depleted_path, header=0, index_col=0)
 
         self.clusters = list(set(self.cell2cluster['cluster']))
+        # print(self.clusters)
         # store the cell id list of some cluster
         self.cluster2cell = dict()
         for i in self.clusters:
@@ -56,6 +57,8 @@ class Evaluate:
             type2 = self.cluster2cluster_depleted.iloc[i]['cluster2']
             if type1 in self.clusters and type2 in self.clusters:
                 self.cluster_pairs_depleted.append((type1, type2))
+        # print(self.cluster_pairs_enriched)
+        # print(self.cluster_pairs_depleted)
     
     def evaluate_with_percentage(self, cci_predict, cci_gt):
         """evaluate the predict result with 10% percentage
@@ -114,6 +117,7 @@ class Evaluate:
         # import pdb; pdb.set_trace()
         for pair in self.cluster_pairs_enriched:
             type1, type2 = pair
+            # print(pair)
             idx1 = self.cluster2cell[type1]
             idx2 = self.cluster2cell[type2]
             total = len(idx1) * len(idx2)

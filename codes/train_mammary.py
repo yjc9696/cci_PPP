@@ -88,7 +88,7 @@ class Trainer:
             print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=1)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.5)
         
         ll_loss = 1e5
         
@@ -109,7 +109,6 @@ class Trainer:
             # precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
                 
             
-
             if epoch % 1 == 0:
                 precision, recall, train_loss = self.mse_evaluate(self.train_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, train loss: {train_loss}")
@@ -219,9 +218,9 @@ if __name__ == '__main__':
                         help="load_pretrained_model")                                   
     parser.add_argument("--save_model_path", type=str, default="checkpoints_default.pth",
                         help="save_model_path")
-    parser.add_argument("--train_dataset", type=str, default="test_dataset",
+    parser.add_argument("--train_dataset", type=str, default="train_dataset",
                         help="train dataset")
-    parser.add_argument("--test_dataset", type=str, default="train_dataset",
+    parser.add_argument("--test_dataset", type=str, default="test_dataset",
                         help="test dataset")
     parser.add_argument("--just_train", type=int, default=0,
                         help="nothing, for debug")

@@ -7,7 +7,7 @@ python ./codes/train_mammary.py --data_dir mouse_small_intestine4 \
 --dense_dim 80 \
 --hidden_dim 40 \
 --lr 1e-3 \
---n_epochs 1000 \
+--n_epochs 200 \
 --batch_size 32 \
 --dropout 0.2 \
 --loss_weight 1 1 \
