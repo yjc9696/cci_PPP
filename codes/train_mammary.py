@@ -224,8 +224,14 @@ if __name__ == '__main__':
                         help="test dataset")
     parser.add_argument("--just_train", type=int, default=0,
                         help="nothing, for debug")
-    parser.add_argument("--score_limit", type=int, default=50,
+    parser.add_argument("--reduction_ratio", type=int, default=1,
+                        help="make pos and neg balance")
+    parser.add_argument("--score_type", type=str, default='score',
+                        help="score, mask_num, max_score")
+    parser.add_argument("--score_limit", type=int, default=60,
                         help="only choose the score above limit as postive samples")
+    parser.add_argument("--using_ligand_receptor", type=bool, default=True,
+                        help="whether using the ligand receptor info")
 
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")

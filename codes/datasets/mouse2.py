@@ -23,7 +23,10 @@ def load_mouse_mammary_gland(params):
     print('using mouse2.py')
     random_seed = params.random_seed
     dense_dim = params.dense_dim
+    score_type = params.score_type
     score_limit = params.score_limit
+    using_ligand_receptor = params.using_ligand_receptor
+    reduction_ratio = params.reduction_ratio
 
     proj_path = Path(__file__).parent.resolve().parent.resolve().parent.resolve()
     mouse_data_path = proj_path / 'data' / params.data_dir #small_intestine
@@ -80,11 +83,12 @@ def load_mouse_mammary_gland(params):
     # construct labels: -1 gene 0~19 cell types
 
     # add gene edges: ligand and receptor
-    for i, j in zip(exist_ligand, exist_receptor):
-        graph.add_edge(gene2id[i], gene2id[j])
-        graph.add_edge(gene2id[j], gene2id[i])
-        graph_test.add_edge(gene2id[i], gene2id[j])
-        graph_test.add_edge(gene2id[j], gene2id[i])
+    if using_ligand_receptor:
+        for i, j in zip(exist_ligand, exist_receptor):
+            graph.add_edge(gene2id[i], gene2id[j])
+            graph.add_edge(gene2id[j], gene2id[i])
+            graph_test.add_edge(gene2id[i], gene2id[j])
+            graph_test.add_edge(gene2id[j], gene2id[i])
 
     matrices = []
     matrices_test = []
@@ -121,14 +125,14 @@ def load_mouse_mammary_gland(params):
         print('gt:')
         print(gt_cci_labels.describe())
         # score_limit = gt_cci_labels['score'].mean() * 1.2
-        gt_cci_labels = gt_cci_labels[gt_cci_labels['score'] > score_limit]
+        gt_cci_labels = gt_cci_labels[gt_cci_labels[score_type] > score_limit]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         gt_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
         gt_cci_labels_data[0] = gt_cci_labels['id1']
         gt_cci_labels_data[1] = gt_cci_labels['id2']
         # import pdb; pdb.set_trace()
         gt_cci_labels_data[2] = 1
-        gt_cci_labels_data[3] = gt_cci_labels['score']
+        gt_cci_labels_data[3] = gt_cci_labels[score_type]
         gt_cci_labels_data[4] = gt_cci_labels_data[0] # truth id1
         gt_cci_labels_data[5] = gt_cci_labels_data[1] # truth id2
         gt_cci_labels_data[0] = gt_cci_labels_data[0].apply(lambda x: x+graph.number_of_nodes())
@@ -145,13 +149,13 @@ def load_mouse_mammary_gland(params):
             print('junk:')
             print(junk_cci_labels.describe())
             # score_limit = junk_cci_labels['score'].mean() * 1.2
-            junk_cci_labels = junk_cci_labels[junk_cci_labels['score'] > score_limit*1]
+            junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*1]
             # 3, 4记录cell真实id，方便构建cell cell interaction
             junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
             junk_cci_labels_data[0] = junk_cci_labels['id1']
             junk_cci_labels_data[1] = junk_cci_labels['id2']
             junk_cci_labels_data[2] = 0
-            junk_cci_labels_data[3] = junk_cci_labels['score'] * (-1)
+            junk_cci_labels_data[3] = junk_cci_labels[score_type] * (-1)
             junk_cci_labels_data[4] = junk_cci_labels_data[0]
             junk_cci_labels_data[5] = junk_cci_labels_data[1]
             junk_cci_labels_data[0] = junk_cci_labels_data[0].apply(lambda x: x+graph.number_of_nodes())
@@ -161,7 +165,7 @@ def load_mouse_mammary_gland(params):
             cur_cci_labels = np.asarray(cur_cci_labels)
             # cur_cci_labels = cur_cci_labels.tolist()
             # cci_labels += cur_cci_labels[:len(cur_cci_labels)//18]
-            cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//12, replace=False)]
+            cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//reduction_ratio, replace=False)]
             cur_cci_labels = cur_cci_labels.tolist()
             # import pdb; pdb.set_trace()
             cci_labels += cur_cci_labels
@@ -172,13 +176,13 @@ def load_mouse_mammary_gland(params):
         print('unknown:')
         print(junk_cci_labels.describe())
         # score_limit = junk_cci_labels['score'].mean() * 1.2
-        junk_cci_labels = junk_cci_labels[junk_cci_labels['score'] > score_limit*1]
+        junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*1]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
         junk_cci_labels_data[0] = junk_cci_labels['id1']
         junk_cci_labels_data[1] = junk_cci_labels['id2']
         junk_cci_labels_data[2] = 0
-        junk_cci_labels_data[3] = junk_cci_labels['score'] * (-1)
+        junk_cci_labels_data[3] = junk_cci_labels[score_type] * (-1)
         junk_cci_labels_data[4] = junk_cci_labels_data[0]
         junk_cci_labels_data[5] = junk_cci_labels_data[1]
         junk_cci_labels_data[0] = junk_cci_labels_data[0].apply(lambda x: x+graph.number_of_nodes())
@@ -189,7 +193,7 @@ def load_mouse_mammary_gland(params):
         # cur_cci_labels = cur_cci_labels.tolist()
         # # import pdb; pdb.set_trace()
         # cci_labels += cur_cci_labels[:len(cur_cci_labels)//18]
-        cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//12, replace=False)]
+        cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//reduction_ratio, replace=False)]
         cur_cci_labels = cur_cci_labels.tolist()
         # import pdb; pdb.set_trace()
         cci_labels += cur_cci_labels

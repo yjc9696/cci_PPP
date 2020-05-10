@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import random
+from multiprocessing import Process, Queue
 
 class Evaluate:
     def __init__(self, params):
@@ -57,8 +58,18 @@ class Evaluate:
             type2 = self.cluster2cluster_depleted.iloc[i]['cluster2']
             if type1 in self.clusters and type2 in self.clusters:
                 self.cluster_pairs_depleted.append((type1, type2))
+
+        self.cluster_pairs_unknown = list()
+        for i in self.clusters:
+            for j in self.clusters:
+                if i != j: 
+                    if (i,j) not in self.cluster_pairs_depleted and (j,i) not in self.cluster_pairs_depleted:
+                        if (i,j) not in self.cluster_pairs_enriched and (j,i) not in self.cluster_pairs_enriched:
+                            self.cluster_pairs_unknown.append((i,j))
         # print(self.cluster_pairs_enriched)
         # print(self.cluster_pairs_depleted)
+        # print()
+        # print(self.cluster_pairs_unknown)
     
     def evaluate_with_percentage(self, cci_predict, cci_gt):
         """evaluate the predict result with 10% percentage
@@ -95,6 +106,14 @@ class Evaluate:
             total = len(idx1) * len(idx2)
             hit = adj[idx1][:, idx2].sum()
             print(f'depleted: hit {hit}, total {total}, ratio {hit/total} ')
+        
+        for pair in self.cluster_pairs_unknown:
+            type1, type2 = pair
+            idx1 = self.cluster2cell[type1]
+            idx2 = self.cluster2cell[type2]
+            total = len(idx1) * len(idx2)
+            hit = adj[idx1][:, idx2].sum()
+            print(f'unknown: hit {hit}, total {total}, ratio {hit/total} ')
         
     def evaluate_with_permuation(self, cci_predict, cci_gt, num=10000):
         """evaluate the predicted result with permuation
@@ -139,6 +158,34 @@ class Evaluate:
             dis = len(np.where(distribution>hit)[0]) # larger than original
 
             print(f'depleted: hit {dis}, total {num}, ratio {dis/num} ')
+        
+        def one_process(pair, q):
+            type1, type2 = pair
+            idx1 = self.cluster2cell[type1]
+            idx2 = self.cluster2cell[type2]
+            total = len(idx1) * len(idx2)
+            # import pdb; pdb.set_trace()
+            hit = adj[idx1][:, idx2].sum()
+            distribution = np.array(self.permuation(adj, idx1, idx2, num))
+            dis = len(np.where(distribution>hit)[0]) # larger than original
+            q.put(dis)
+
+        wrong = 0
+        q = Queue()
+        p_obj = list()
+        for pair in self.cluster_pairs_unknown:
+            p = Process(target=one_process, args=(pair,q,))
+            p_obj.append(p)
+        for i in p_obj:
+            i.start()
+        for i in p_obj:
+            i.join()
+            
+        while not q.empty():
+            dis = q.get(True)
+            if dis / num < 0.05:
+                wrong += 1
+        print(f'unknown: wrong ratio {wrong} / {len(self.cluster_pairs_unknown)}, {wrong/len(self.cluster_pairs_unknown)} ')
         
     def permuation(self, adj, idx1, idx2, num=10000):
         """permuation the result

@@ -7,7 +7,7 @@ python ./codes/train_mammary.py --data_dir mouse_small_intestine4 \
 --dense_dim 80 \
 --hidden_dim 40 \
 --lr 1e-3 \
---n_epochs 200 \
+--n_epochs 500 \
 --batch_size 32 \
 --dropout 0.2 \
 --loss_weight 1 1 \
@@ -15,4 +15,7 @@ python ./codes/train_mammary.py --data_dir mouse_small_intestine4 \
 --pretrained_model_path checkpoints/best_modelv5.pth \
 --load_pretrained_model 0 \
 --save_model_path checkpoints/best_modelv5.pth \
---score_limit 60
+--score_limit 60 \
+--score_type score \
+--using_ligand_receptor True \
+--reduction_ratio 5

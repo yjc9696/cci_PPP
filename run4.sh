@@ -15,4 +15,7 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine2 \
 --pretrained_model_path checkpoints/best_modelv4.pth \
 --load_pretrained_model 0 \
 --save_model_path checkpoints/best_modelv4.pth \
---score_limit 60
+--score_limit 60 \
+--score_type score \
+--using_ligand_receptor False \
+--reduction_ratio 5
