@@ -139,7 +139,7 @@ def load_mouse_mammary_gland(params):
         # import pdb; pdb.set_trace()
         try:
             junk_cci_labels = cci_labels_df.get_group(0)
-            junk_cci_labels = junk_cci_labels[junk_cci_labels['score'] > score_limit]
+            junk_cci_labels = junk_cci_labels[junk_cci_labels['score'] > score_limit*1]
             # 3, 4记录cell真实id，方便构建cell cell interaction
             junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
             junk_cci_labels_data[0] = junk_cci_labels['id1']
@@ -153,13 +153,17 @@ def load_mouse_mammary_gland(params):
 
             cur_cci_labels = junk_cci_labels_data[[0,1,2,3,4,5]].values.tolist()
             cur_cci_labels = np.asarray(cur_cci_labels)
+            # cur_cci_labels = cur_cci_labels.tolist()
+            # cci_labels += cur_cci_labels[:len(cur_cci_labels)//18]
+            cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//15, replace=False)]
             cur_cci_labels = cur_cci_labels.tolist()
+            # import pdb; pdb.set_trace()
             cci_labels += cur_cci_labels
         except Exception as e:
             pass
         
         junk_cci_labels = cci_labels_df.get_group(-1)
-        junk_cci_labels = junk_cci_labels[junk_cci_labels['score'] > score_limit]
+        junk_cci_labels = junk_cci_labels[junk_cci_labels['score'] > score_limit*1]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
         junk_cci_labels_data[0] = junk_cci_labels['id1']
@@ -173,7 +177,12 @@ def load_mouse_mammary_gland(params):
 
         cur_cci_labels = junk_cci_labels_data[[0,1,2,3,4,5]].values.tolist()
         cur_cci_labels = np.asarray(cur_cci_labels)
+        # cur_cci_labels = cur_cci_labels.tolist()
+        # # import pdb; pdb.set_trace()
+        # cci_labels += cur_cci_labels[:len(cur_cci_labels)//18]
+        cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//20, replace=False)]
         cur_cci_labels = cur_cci_labels.tolist()
+        # import pdb; pdb.set_trace()
         cci_labels += cur_cci_labels
         print(f'unkown cci labels: {len(cur_cci_labels)}')
 
@@ -262,10 +271,22 @@ def load_mouse_mammary_gland(params):
     vali_mask = vali_mask.type(torch.bool)
 
     # import pdb; pdb.set_trace()
+    
+    train_score = train_cci_labels[:,3].type(torch.FloatTensor)
+    test_score = test_cci_labels[:,3].type(torch.FloatTensor)
+
+    demo = (train_score.var().sqrt() * test_score.var().sqrt()).sqrt()
+    print(f'nomalize demorator: {demo}')
+    train_score = (train_score) / demo
+    
+    # test_score = (test_score - test_score.min()) / (test_score.max() - test_score.min()) * 2 - 1
+    test_score = (test_score) / demo
+    assert len(train_score) == len(train_cci_labels), 'error'
+    assert len(test_score) == len(test_cci_labels), 'error'
 
     # return num_cells, num_genes, num_labels, graph, features, train_cci_labels, train_mask, vali_mask
     return num_cells, num_genes, 2, graph, features, graph_test, features_test, \
-        train_cci_labels, train_mask, vali_mask, test_cci_labels
+        train_cci_labels, train_mask, vali_mask, test_cci_labels, train_score, test_score
 
 
 if __name__ == '__main__':

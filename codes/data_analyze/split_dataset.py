@@ -146,19 +146,19 @@ def split_mouse_small_intestine(params):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Analyze marrow gene')
     parser.add_argument("--random_seed", type=int, default=10086)
-    parser.add_argument("--data_dir", type=str, default='mouse_bone_marrow',
+    parser.add_argument("--data_dir", type=str, default='mouse_small_intestine3',
                         help="root path of the data dir")
     parser.add_argument("--train_dataset", type=str, default='train_dataset',
                         help="train dataset")
     parser.add_argument("--test_dataset", type=str, default='test_dataset',
                         help="test dataset")
-    parser.add_argument("--cell_data", type=str, default='mouse_bone_marrow_911_data.csv',
+    parser.add_argument("--cell_data", type=str, default='mouse_small_intestine_1189_data.csv',
                         help="cell data gene")
-    parser.add_argument("--cell_cluster", type=str, default='mouse_bone_marrow_911_cellcluster.csv',
+    parser.add_argument("--cell_cluster", type=str, default='mouse_small_intestine_1189_cellcluster.csv',
                         help="cell belongs to which cluster")
-    parser.add_argument("--cluster_cluster_interaction_enriched", type=str, default='mouse_bone_marrow_911_cluster_cluster_interaction_enriched.csv',
+    parser.add_argument("--cluster_cluster_interaction_enriched", type=str, default='mouse_small_intestine_1189_cluster_cluster_interaction_enriched.csv',
                         help="cluster - cluster interaction enriched")
-    parser.add_argument("--cluster_cluster_interaction_depleted", type=str, default='mouse_bone_marrow_911_cluster_cluster_interaction_depleted.csv',
+    parser.add_argument("--cluster_cluster_interaction_depleted", type=str, default='mouse_small_intestine_1189_cluster_cluster_interaction_depleted.csv',
                         help="cluster - cluster interaction depleted")
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")

@@ -1,3 +1,7 @@
+# newer than mouse.py
+# this file use the analyze.csv 
+# format: id1, id2, type1, type2, cci, mask_num, score, max_score, cell_name1, cell_name2
+
 import argparse
 
 import pandas as pd
@@ -15,9 +19,11 @@ from .dataset import TrainSet
 
 
 
-def load_mouse_mammary_gland(params):
+def load_mouse_mammary_gland_norm(params):
+    print('using mouse_norm.py')
     random_seed = params.random_seed
     dense_dim = params.dense_dim
+    score_limit = params.score_limit
 
     proj_path = Path(__file__).parent.resolve().parent.resolve().parent.resolve()
     mouse_data_path = proj_path / 'data' / params.data_dir #small_intestine
@@ -104,50 +110,81 @@ def load_mouse_mammary_gland(params):
 
         print(f'Nonzero Ratio: {df.fillna(0).astype(bool).sum().sum() / df.size * 100:.2f}%')
 
+        # import pdb; pdb.set_trace()
 
         # stores the pairs that have relation
         # indexs = list()
-        cci_labels_gt_paths = (dataset / 'data').glob('*gt*.csv')
+        cci_labels_paths = dataset.glob('*analyze*.csv').__next__()
+        cci_labels_df = pd.read_csv(cci_labels_paths).groupby('cci')
 
-        for file in sorted(cci_labels_gt_paths):
+        gt_cci_labels = cci_labels_df.get_group(1)
+        gt_cci_labels = gt_cci_labels[gt_cci_labels['score'] > score_limit]
+        # 3, 4记录cell真实id，方便构建cell cell interaction
+        gt_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
+        gt_cci_labels_data[0] = gt_cci_labels['id1']
+        gt_cci_labels_data[1] = gt_cci_labels['id2']
+        # import pdb; pdb.set_trace()
+        gt_cci_labels_data[2] = 1
+        gt_cci_labels_data[3] = gt_cci_labels['score']
+        gt_cci_labels_data[4] = gt_cci_labels_data[0] # truth id1
+        gt_cci_labels_data[5] = gt_cci_labels_data[1] # truth id2
+        gt_cci_labels_data[0] = gt_cci_labels_data[0].apply(lambda x: x+graph.number_of_nodes())
+        gt_cci_labels_data[1] = gt_cci_labels_data[1].apply(lambda x: x+graph.number_of_nodes())
 
-            cur_cci_labels = pd.read_csv(file, header=None, usecols=[0,1,2])
+        cur_cci_labels = gt_cci_labels_data[[0,1,2,3,4,5]].values.tolist()
+        cur_cci_labels = np.asarray(cur_cci_labels)
+        cur_cci_labels = cur_cci_labels.tolist()
+        cci_labels += cur_cci_labels
+
+        # import pdb; pdb.set_trace()
+        try:
+            junk_cci_labels = cci_labels_df.get_group(0)
+            junk_cci_labels = junk_cci_labels[junk_cci_labels['score'] > score_limit*1]
             # 3, 4记录cell真实id，方便构建cell cell interaction
-            cur_cci_labels[3] = cur_cci_labels[0]
-            cur_cci_labels[4] = cur_cci_labels[1]
-            cur_cci_labels[0] = cur_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
-            cur_cci_labels[1] = cur_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
-            # import pdb; pdb.set_trace()
-            
-            cur_cci_labels = cur_cci_labels.values.tolist()
-     
-            # if each_dataset_size > 0 and len(cur_cci_labels) > each_dataset_size:
-            #     cur_cci_labels = np.asarray(cur_cci_labels)
-            #     index = np.random.choice(cur_cci_labels.shape[0]-1, each_dataset_size)
-            #     indexs.append(index)
-            #     cur_cci_labels = cur_cci_labels[index].tolist()
+            junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
+            junk_cci_labels_data[0] = junk_cci_labels['id1']
+            junk_cci_labels_data[1] = junk_cci_labels['id2']
+            junk_cci_labels_data[2] = 0
+            junk_cci_labels_data[3] = junk_cci_labels['score'] * (-1)
+            junk_cci_labels_data[4] = junk_cci_labels_data[0]
+            junk_cci_labels_data[5] = junk_cci_labels_data[1]
+            junk_cci_labels_data[0] = junk_cci_labels_data[0].apply(lambda x: x+graph.number_of_nodes())
+            junk_cci_labels_data[1] = junk_cci_labels_data[1].apply(lambda x: x+graph.number_of_nodes())
 
+            cur_cci_labels = junk_cci_labels_data[[0,1,2,3,4,5]].values.tolist()
             cur_cci_labels = np.asarray(cur_cci_labels)
+            # cur_cci_labels = cur_cci_labels.tolist()
+            # cci_labels += cur_cci_labels[:len(cur_cci_labels)//18]
+            # cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//18, replace=False)]
             cur_cci_labels = cur_cci_labels.tolist()
+            # import pdb; pdb.set_trace()
             cci_labels += cur_cci_labels
-
-        cci_labels_junk_paths = (dataset / 'data').glob('*junk*.csv')
+        except Exception as e:
+            pass
         
-        # cur_index = 0
-        for file in sorted(cci_labels_junk_paths):
+        junk_cci_labels = cci_labels_df.get_group(-1)
+        junk_cci_labels = junk_cci_labels[junk_cci_labels['score'] > score_limit*1]
+        # 3, 4记录cell真实id，方便构建cell cell interaction
+        junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
+        junk_cci_labels_data[0] = junk_cci_labels['id1']
+        junk_cci_labels_data[1] = junk_cci_labels['id2']
+        junk_cci_labels_data[2] = 0
+        junk_cci_labels_data[3] = junk_cci_labels['score'] * (-1)
+        junk_cci_labels_data[4] = junk_cci_labels_data[0]
+        junk_cci_labels_data[5] = junk_cci_labels_data[1]
+        junk_cci_labels_data[0] = junk_cci_labels_data[0].apply(lambda x: x+graph.number_of_nodes())
+        junk_cci_labels_data[1] = junk_cci_labels_data[1].apply(lambda x: x+graph.number_of_nodes())
 
-            junk_cci_labels = pd.read_csv(file, header=None, usecols=[0,1,2])
-            junk_cci_labels[3] = junk_cci_labels[0]
-            junk_cci_labels[4] = junk_cci_labels[1]
-            junk_cci_labels[0] = junk_cci_labels[0].apply(lambda x: x+graph.number_of_nodes())
-            junk_cci_labels[1] = junk_cci_labels[1].apply(lambda x: x+graph.number_of_nodes())
-            
-            junk_cci_labels = junk_cci_labels.values.tolist()
-
-            junk_cci_labels = np.asarray(junk_cci_labels)
-            # junk_cci_labels = junk_cci_labels[indexs[cur_index]].tolist()
-            junk_cci_labels = junk_cci_labels.tolist()
-            cci_labels += junk_cci_labels
+        cur_cci_labels = junk_cci_labels_data[[0,1,2,3,4,5]].values.tolist()
+        cur_cci_labels = np.asarray(cur_cci_labels)
+        # cur_cci_labels = cur_cci_labels.tolist()
+        # # import pdb; pdb.set_trace()
+        # cci_labels += cur_cci_labels[:len(cur_cci_labels)//18]
+        # cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//18, replace=False)]
+        cur_cci_labels = cur_cci_labels.tolist()
+        # import pdb; pdb.set_trace()
+        cci_labels += cur_cci_labels
+        print(f'unkown cci labels: {len(cur_cci_labels)}')
 
         # maintain inter-datasets index for graph and RNA-seq values
         arr = df.to_numpy()
@@ -176,7 +213,7 @@ def load_mouse_mammary_gland(params):
         graph_test.add_edges(tgt_idx, src_idx)
 
         print(f'Added {len(df)} nodes and {len(src_idx)} edges.')
-        print(f'#Nodes: {graph.number_of_nodes()}, #Edges: {graph.number_of_edges()}.')
+        print(f'#Nodes: {graph_test.number_of_nodes()}, #Edges: {graph_test.number_of_edges()}.')
         print(f'Costs {time() - start:.3f} s in total.\n')
 
         is_test_dataset = 1
@@ -202,19 +239,6 @@ def load_mouse_mammary_gland(params):
 
 # 2. create features
     sparse_feat = vstack(matrices).toarray()  # cell-wise  (cell, gene)
-    # # transpose to gene-wise
-    # print(sparse_feat.shape)
-    # gene_pca = PCA(dense_dim, random_state=random_seed).fit(sparse_feat_test.T)
-    # gene_feat = gene_pca.transform(sparse_feat_test.T)
-    # gene_evr = sum(gene_pca.explained_variance_ratio_) * 100
-    # # print(f'[PCA] explained_variance_: {gene_pca.explained_variance_}')
-    # print(f'[PCA] Gene EVR: {gene_evr:.2f} %.')
-    # # do normalization
-    # sparse_feat = sparse_feat / np.sum(sparse_feat, axis=1, keepdims=True)
-    # sparse_feat = preprocessing.scale(sparse_feat, axis=1) #very good
-    # sparse_feat = preprocessing.normalize(sparse_feat, norm='max', axis=1) 
-    # sparse_feat = sparse_feat / np.linalg.norm(sparse_feat, axis=1)[0]
-
     # use weighted gene_feat as cell_feat
     cell_feat = sparse_feat.dot(gene_feat)
     gene_feat = torch.from_numpy(gene_feat)  # use shared storage
@@ -225,13 +249,16 @@ def load_mouse_mammary_gland(params):
 
     # 4. then create masks for different purposes.
     num_cells = graph.number_of_nodes() - num_genes
+    # import pdb; pdb.set_trace()
     train_cci_labels = torch.LongTensor(train_cci_labels)
     test_cci_labels = torch.LongTensor(test_cci_labels)
 
     num_pairs = len(train_cci_labels)
     print(f"Total train {len(train_cci_labels)} pairs.")
     print(f"Total test {len(test_cci_labels)} pairs.")
-
+    print(f'train positive ratio: {train_cci_labels[:,2].sum().item() / len(train_cci_labels)}')
+    print(f'test positive ratio: {test_cci_labels[:,2].sum().item() / len(test_cci_labels)}')
+    # import pdb; pdb.set_trace()
     train_mask = torch.zeros(num_pairs, dtype=torch.int32)
     vali_mask = torch.zeros(num_pairs, dtype=torch.int32)
 
@@ -244,10 +271,20 @@ def load_mouse_mammary_gland(params):
     vali_mask = vali_mask.type(torch.bool)
 
     # import pdb; pdb.set_trace()
+    train_score = train_cci_labels[:,3].type(torch.FloatTensor)
+    test_score = test_cci_labels[:,3].type(torch.FloatTensor)
 
+    demo = (train_score.var().sqrt() * test_score.var().sqrt()).sqrt()
+    train_score = (train_score) / demo
+    
+    # test_score = (test_score - test_score.min()) / (test_score.max() - test_score.min()) * 2 - 1
+    test_score = (test_score) / demo
+    assert len(train_score) == len(train_cci_labels), 'error'
+    assert len(test_score) == len(test_cci_labels), 'error'
+    
     # return num_cells, num_genes, num_labels, graph, features, train_cci_labels, train_mask, vali_mask
     return num_cells, num_genes, 2, graph, features, graph_test, features_test, \
-        train_cci_labels, train_mask, vali_mask, test_cci_labels
+        train_cci_labels, train_mask, vali_mask, test_cci_labels, train_score, test_score
 
 
 if __name__ == '__main__':

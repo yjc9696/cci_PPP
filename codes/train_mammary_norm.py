@@ -13,7 +13,7 @@ import sklearn
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 # self-defined
-from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
+from datasets import load_mouse_mammary_gland, load_tissue, TrainSet, load_mouse_mammary_gland_norm
 from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2, FocalLoss
 from torchlight import set_seed
 import random
@@ -35,7 +35,7 @@ class Trainer:
         # data
         self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, \
             self.graph_test, self.features_test, self.train_dataset, self.train_mask, \
-                self.vali_mask, self.test_dataset, _, _ = load_mouse_mammary_gland(params)
+                self.vali_mask, self.test_dataset, self.train_score, self.test_score = load_mouse_mammary_gland_norm(params)
         # evaluate
         self.eval = Evaluate(params)
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
@@ -70,10 +70,13 @@ class Trainer:
         self.graph = self.graph_test
         self.features = self.features_test
 
+        self.train_score = self.train_score.to(self.device)
+        self.test_score = self.test_score.to(self.device)
+
         self.train_mask = self.train_mask.to(self.device)
         self.vali_mask = self.vali_mask.to(self.device)
         self.train_dataset = self.train_dataset.to(self.device)
-        self.trainset = TrainSet(self.train_dataset[self.train_mask])
+        self.trainset = TrainSet(self.train_dataset[self.train_mask], self.train_score[self.train_mask])
         self.test_dataset = self.test_dataset.to(self.device)
         self.train_dataloader = DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
@@ -88,7 +91,7 @@ class Trainer:
             print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.1)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.01)
         
         ll_loss = 1e5
         
@@ -110,70 +113,71 @@ class Trainer:
             # if train_loss < ll_loss:
             #     torch.save(self.model.state_dict(), self.save_model_path)
             #     ll_loss = train_loss
-
+            # import pdb; pdb.set_trace()
             if epoch % 1 == 0:
                 precision, recall, train_loss = self.mse_evaluate(self.train_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, train loss: {train_loss}")
                 if self.params.just_train == 0:
                     precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
                     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
-                    precision, recall, test_loss = self.mse_test(self.test_dataset)
+                    precision, recall, test_loss = self.mse_test(self.test_dataset, self.test_score)
                     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
 
     def mse_evaluate(self, mask):
         self.model.eval()
         eval_dataset = self.train_dataset[mask]
+        eval_score = self.train_score[mask]
         with torch.no_grad():
             _, logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
-            loss = self.loss_fn(logits.squeeze_(), eval_dataset[:, 3].type(torch.float))
+            loss = self.loss_fn(logits.squeeze_(), eval_score)
        
         indices = torch.ge(logits, 0).type(torch.int)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         # import pdb; pdb.set_trace()
         return precision[1], recall[1], loss
 
-    def mse_test(self, test_dataset):
+    def mse_test(self, test_dataset, test_score):
         self.model.eval()
         with torch.no_grad():
             _, logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
-            loss = self.loss_fn(logits.squeeze_(), test_dataset[:, 3].type(torch.float))
+            loss = self.loss_fn(logits.squeeze_(), test_score)
         indices = torch.ge(logits, 0).type(torch.int)
         # print(len(indices), indices.sum().item())
         # import pdb; pdb.set_trace()
         indices_numpy = indices.cpu().clone().numpy()
         test_dataset_numpy = test_dataset.cpu().clone().numpy()
         # self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
-        self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
+        # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         return precision[1], recall[1], loss
 
-    # def evaluate(self, mask):
-    #     self.model.eval()
-    #     eval_dataset = self.train_dataset[mask]
-    #     with torch.no_grad():
-    #         logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
-    #         loss = self.loss_fn(logits, eval_dataset[:, 2])
-    #     _, indices = torch.max(logits, dim=1)
-    #     ap_score = average_precision_score(eval_dataset[:,2].tolist(), indices.tolist())
-    #     precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
-    #     # import pdb; pdb.set_trace()
-    #     return precision[1], recall[1], loss
+    def evaluate(self, mask):
+        self.model.eval()
+        eval_dataset = self.train_dataset[mask]
+        with torch.no_grad():
+            logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
+            loss = self.loss_fn(logits, eval_dataset[:, 2])
+        _, indices = torch.max(logits, dim=1)
+        ap_score = average_precision_score(eval_dataset[:,2].tolist(), indices.tolist())
+        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
+        # import pdb; pdb.set_trace()
+        return precision[1], recall[1], loss
 
-    # def test(self, test_dataset):
-    #     self.model.eval()
-    #     loss_fn = nn.CrossEntropyLoss(self.loss_weight)
-    #     with torch.no_grad():
-    #         logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
-    #         loss = loss_fn(logits, test_dataset[:, 2])
-    #     _, indices = torch.max(logits, dim=1)
-    #     # print(len(indices), indices.sum().item())
-    #     # import pdb; pdb.set_trace()
-    #     indices_numpy = indices.cpu().clone().numpy()
-    #     test_dataset_numpy = test_dataset.cpu().clone().numpy()
-    #     self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
-    #     # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
-    #     precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
-    #     return precision[1], recall[1], loss
+    def test(self, test_dataset):
+        self.model.eval()
+        loss_fn = nn.CrossEntropyLoss(self.loss_weight)
+        with torch.no_grad():
+            logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
+            loss = loss_fn(logits, test_dataset[:, 2])
+        _, indices = torch.max(logits, dim=1)
+        # print(len(indices), indices.sum().item())
+        # import pdb; pdb.set_trace()
+        indices_numpy = indices.cpu().clone().numpy()
+        test_dataset_numpy = test_dataset.cpu().clone().numpy()
+        self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
+        # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
+        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
+        return precision[1], recall[1], loss
 
 
 if __name__ == '__main__':

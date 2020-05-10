@@ -1,4 +1,4 @@
-python ./codes/train_mammary.py --data_dir mouse_small_intestine2 \
+python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine2 \
 --cell_data_path mouse_small_intestine_1189_data.csv \
 --ligand_receptor_gene mouse_ligand_receptor_pair.csv \
 --train_dataset train_dataset \
@@ -7,9 +7,9 @@ python ./codes/train_mammary.py --data_dir mouse_small_intestine2 \
 --dense_dim 80 \
 --hidden_dim 40 \
 --lr 1e-4 \
---n_epochs 10000 \
+--n_epochs 100 \
 --batch_size 32 \
---dropout 0.1 \
+--dropout 0.2 \
 --loss_weight 1 1 \
 --n_layers 2 \
 --pretrained_model_path checkpoints/best_modelv4.pth \
