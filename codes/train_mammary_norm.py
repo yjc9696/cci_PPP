@@ -41,7 +41,7 @@ class Trainer:
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
         # self.features = self.vae.get_hidden(self.features)
         # model
-        self.num_classes = 1
+        # self.num_classes = 1
         self.model = GraphSAGE(in_feats=params.dense_dim,
                                n_hidden=params.hidden_dim,
                                n_classes=self.num_classes,
@@ -82,7 +82,7 @@ class Trainer:
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         self.loss_weight = torch.Tensor(params.loss_weight).to(self.device)
         
-        # self.loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
+        self.loss_fn_classify = nn.CrossEntropyLoss(weight=self.loss_weight)
         # self.loss_fn = FocalLoss(gamma=2, alpha=0.25)
         self.loss_fn = nn.MSELoss().to(self.device)
 
@@ -97,12 +97,13 @@ class Trainer:
         
         for epoch in range(self.params.n_epochs):
             self.model.train()
-            for step, (batch_x1, batch_x2, _, batch_y) in enumerate(self.train_dataloader):
+            for step, (batch_x1, batch_x2, batch_y_classify, batch_y) in enumerate(self.train_dataloader):
 
-                _, logits = self.model(self.graph, self.features, batch_x1, batch_x2)
+                logits_classfiy, logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 # import pdb; pdb.set_trace()
+                # loss_classify = self.loss_fn_classify(logits_classfiy ,batch_y_classify)
                 loss = self.loss_fn(logits.squeeze_(), batch_y.type(torch.float))
-
+                
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -130,7 +131,8 @@ class Trainer:
         with torch.no_grad():
             _, logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
             loss = self.loss_fn(logits.squeeze_(), eval_score)
-       
+            # import pdb; pdb.set_trace()
+            # print('2')
         indices = torch.ge(logits, 0).type(torch.int)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         # import pdb; pdb.set_trace()

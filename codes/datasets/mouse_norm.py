@@ -274,7 +274,8 @@ def load_mouse_mammary_gland_norm(params):
     train_score = train_cci_labels[:,3].type(torch.FloatTensor)
     test_score = test_cci_labels[:,3].type(torch.FloatTensor)
 
-    demo = (train_score.var().sqrt() * test_score.var().sqrt()).sqrt()
+    # demo = (train_score.var().sqrt() * test_score.var().sqrt()).sqrt()
+    demo = (train_score.max() - train_score.min()) / 2
     train_score = (train_score) / demo
     
     # test_score = (test_score - test_score.min()) / (test_score.max() - test_score.min()) * 2 - 1

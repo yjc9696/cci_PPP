@@ -6,9 +6,9 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine2 \
 --gpu 0 \
 --dense_dim 80 \
 --hidden_dim 40 \
---lr 1e-4 \
+--lr 1e-3 \
 --n_epochs 100 \
---batch_size 32 \
+--batch_size 320 \
 --dropout 0.2 \
 --loss_weight 1 1 \
 --n_layers 2 \

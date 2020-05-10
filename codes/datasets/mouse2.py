@@ -155,7 +155,7 @@ def load_mouse_mammary_gland(params):
             cur_cci_labels = np.asarray(cur_cci_labels)
             # cur_cci_labels = cur_cci_labels.tolist()
             # cci_labels += cur_cci_labels[:len(cur_cci_labels)//18]
-            cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//15, replace=False)]
+            cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//5, replace=False)]
             cur_cci_labels = cur_cci_labels.tolist()
             # import pdb; pdb.set_trace()
             cci_labels += cur_cci_labels
@@ -180,7 +180,7 @@ def load_mouse_mammary_gland(params):
         # cur_cci_labels = cur_cci_labels.tolist()
         # # import pdb; pdb.set_trace()
         # cci_labels += cur_cci_labels[:len(cur_cci_labels)//18]
-        cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//20, replace=False)]
+        cur_cci_labels = cur_cci_labels[np.random.choice(len(cur_cci_labels), len(cur_cci_labels)//5, replace=False)]
         cur_cci_labels = cur_cci_labels.tolist()
         # import pdb; pdb.set_trace()
         cci_labels += cur_cci_labels
@@ -275,12 +275,13 @@ def load_mouse_mammary_gland(params):
     train_score = train_cci_labels[:,3].type(torch.FloatTensor)
     test_score = test_cci_labels[:,3].type(torch.FloatTensor)
 
-    demo = (train_score.var().sqrt() * test_score.var().sqrt()).sqrt()
+    # demo = (train_score.var().sqrt() * test_score.var().sqrt()).sqrt()
+    demo = (train_score.max() - train_score.min()) / 2
     print(f'nomalize demorator: {demo}')
-    train_score = (train_score) / demo
+    # train_score = (train_score) / demo
     
     # test_score = (test_score - test_score.min()) / (test_score.max() - test_score.min()) * 2 - 1
-    test_score = (test_score) / demo
+    # test_score = (test_score) / demo
     assert len(train_score) == len(train_cci_labels), 'error'
     assert len(test_score) == len(test_cci_labels), 'error'
 
