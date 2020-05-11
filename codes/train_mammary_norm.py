@@ -13,7 +13,7 @@ import sklearn
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 # self-defined
-from datasets import load_mouse_mammary_gland, load_tissue, TrainSet, load_mouse_mammary_gland_norm
+from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
 from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2, FocalLoss
 from torchlight import set_seed
 import random
@@ -22,6 +22,7 @@ from evaluate import Evaluate
 class Trainer:
     def __init__(self, params):
         self.params = params
+        self.evaluate_percentage = params.evaluate_percentage
         
         self.device = torch.device('cpu' if self.params.gpu == -1 else f'cuda:{params.gpu}')
         # self.log_dir = get_dump_path(params) 
@@ -35,7 +36,7 @@ class Trainer:
         # data
         self.num_cells, self.num_genes, self.num_classes, self.graph, self.features, \
             self.graph_test, self.features_test, self.train_dataset, self.train_mask, \
-                self.vali_mask, self.test_dataset, self.train_score, self.test_score = load_mouse_mammary_gland_norm(params)
+                self.vali_mask, self.test_dataset, self.train_score, self.test_score = load_mouse_mammary_gland(params)
         # evaluate
         self.eval = Evaluate(params)
         # self.vae = torch.load('./saved_model/vae.pkl', self.features.device)
@@ -151,35 +152,38 @@ class Trainer:
         # self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
         # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
+        if precision[1] > self.evaluate_percentage:
+            self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy, self.features_test.cpu().clone().numpy())
+        print(precision[0], recall[0])
         return precision[1], recall[1], loss
 
-    def evaluate(self, mask):
-        self.model.eval()
-        eval_dataset = self.train_dataset[mask]
-        with torch.no_grad():
-            logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
-            loss = self.loss_fn(logits, eval_dataset[:, 2])
-        _, indices = torch.max(logits, dim=1)
-        ap_score = average_precision_score(eval_dataset[:,2].tolist(), indices.tolist())
-        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
-        # import pdb; pdb.set_trace()
-        return precision[1], recall[1], loss
+    # def evaluate(self, mask):
+    #     self.model.eval()
+    #     eval_dataset = self.train_dataset[mask]
+    #     with torch.no_grad():
+    #         logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
+    #         loss = self.loss_fn(logits, eval_dataset[:, 2])
+    #     _, indices = torch.max(logits, dim=1)
+    #     ap_score = average_precision_score(eval_dataset[:,2].tolist(), indices.tolist())
+    #     precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
+    #     # import pdb; pdb.set_trace()
+    #     return precision[1], recall[1], loss
 
-    def test(self, test_dataset):
-        self.model.eval()
-        loss_fn = nn.CrossEntropyLoss(self.loss_weight)
-        with torch.no_grad():
-            logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
-            loss = loss_fn(logits, test_dataset[:, 2])
-        _, indices = torch.max(logits, dim=1)
-        # print(len(indices), indices.sum().item())
-        # import pdb; pdb.set_trace()
-        indices_numpy = indices.cpu().clone().numpy()
-        test_dataset_numpy = test_dataset.cpu().clone().numpy()
-        self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
-        # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
-        precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
-        return precision[1], recall[1], loss
+    # def test(self, test_dataset):
+    #     self.model.eval()
+    #     loss_fn = nn.CrossEntropyLoss(self.loss_weight)
+    #     with torch.no_grad():
+    #         logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
+    #         loss = loss_fn(logits, test_dataset[:, 2])
+    #     _, indices = torch.max(logits, dim=1)
+    #     # print(len(indices), indices.sum().item())
+    #     # import pdb; pdb.set_trace()
+    #     indices_numpy = indices.cpu().clone().numpy()
+    #     test_dataset_numpy = test_dataset.cpu().clone().numpy()
+    #     self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
+    #     # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
+    #     precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
+    #     return precision[1], recall[1], loss
 
 
 if __name__ == '__main__':
@@ -219,14 +223,22 @@ if __name__ == '__main__':
                         help="load_pretrained_model")                                   
     parser.add_argument("--save_model_path", type=str, default="checkpoints_default.pth",
                         help="save_model_path")
-    parser.add_argument("--train_dataset", type=str, default="test_dataset",
+    parser.add_argument("--train_dataset", type=str, default="train_dataset",
                         help="train dataset")
-    parser.add_argument("--test_dataset", type=str, default="train_dataset",
+    parser.add_argument("--test_dataset", type=str, default="test_dataset",
                         help="test dataset")
     parser.add_argument("--just_train", type=int, default=0,
                         help="nothing, for debug")
-    parser.add_argument("--score_limit", type=int, default=50,
+    parser.add_argument("--reduction_ratio", type=int, default=1,
+                        help="make pos and neg balance")
+    parser.add_argument("--score_type", type=str, default='score',
+                        help="score, mask_num, max_score")
+    parser.add_argument("--score_limit", type=int, default=60,
                         help="only choose the score above limit as postive samples")
+    parser.add_argument("--evaluate_percentage", type=float, default=0.7,
+                        help="when evaluate")
+    parser.add_argument("--using_ligand_receptor", type=bool, default=True,
+                        help="whether using the ligand receptor info")
 
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
                         help="cluster - cluster interaction depleted")

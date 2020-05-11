@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import random
 from multiprocessing import Process, Queue
+import pickle as pkl
 
 class Evaluate:
     def __init__(self, params):
@@ -17,6 +18,7 @@ class Evaluate:
             params (args): [description]
         """
         proj_path = Path(__file__).parent.resolve().parent.resolve()
+        self.tsne_path = proj_path / 'tmp'
         mouse_data_path = proj_path / 'data' / params.data_dir #small_intestine
         # train_dataset = mouse_data_path / params.train_dataset
         test_dataset = mouse_data_path / params.test_dataset
@@ -116,12 +118,14 @@ class Evaluate:
             hit = adj[idx1][:, idx2].sum()
             print(f'unknown: hit {hit}, total {total}, ratio {hit/total} ')
         
-    def evaluate_with_permuation(self, cci_predict, cci_gt, num=10000):
+    def evaluate_with_permuation(self, cci_predict, cci_gt, features, num=10000):
         """evaluate the predicted result with permuation
         
         Args:
-            cci_gt (np.array pair_num*5): [cell1, cell2, relation, cell_id1, cell_id2]
             cci_predict (np.array, pair_num * 1): [labels]
+            cci_gt (np.array pair_num*5): [cell1, cell2, relation, cell_id1, cell_id2]
+            features (np.array) (num_genes + num_train_nodes + num_test_nodes) * dim, only need test node fea.
+            
         """
         # indices predicted positive by the model
         nonzero = cci_predict.nonzero()[0]
@@ -129,6 +133,20 @@ class Evaluate:
         cci_gt_nonzero = cci_gt[nonzero]
         col = cci_gt_nonzero[:, 3]
         row = cci_gt_nonzero[:, 4]
+
+        test_fea = features[-len(self.cell_data)]
+        labels = self.cell2cluster['cluster'].tolist()
+
+        tsne = dict()
+        tsne['feature'] = test_fea
+        tsne['labels'] = labels
+        tsne['src'] = col
+        tsne['tar'] = row
+        p = self.tsne_path / f'{len(self.cell_data)}.pkl'
+        # print(p)
+        with open(p, 'wb') as f:
+            pkl.dump(tsne, f)
+
 
         adj = np.zeros((len(self.cell_data), len(self.cell_data)))
         adj[row, col] = 1

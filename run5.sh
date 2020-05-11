@@ -1,4 +1,4 @@
-python ./codes/train_mammary.py --data_dir mouse_small_intestine3 \
+python ./codes/train_mammary.py --data_dir mouse_small_intestine4 \
 --cell_data_path mouse_small_intestine_1189_data.csv \
 --ligand_receptor_gene mouse_ligand_receptor_pair.csv \
 --train_dataset train_dataset \

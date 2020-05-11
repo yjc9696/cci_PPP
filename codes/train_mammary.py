@@ -89,7 +89,7 @@ class Trainer:
             print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.05)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.01)
         
         ll_loss = 1e5
         
