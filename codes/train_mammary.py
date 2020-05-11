@@ -22,6 +22,7 @@ from evaluate import Evaluate
 class Trainer:
     def __init__(self, params):
         self.params = params
+        self.evaluate_percentage = params.evaluate_percentage
         
         self.device = torch.device('cpu' if self.params.gpu == -1 else f'cuda:{params.gpu}')
         # self.log_dir = get_dump_path(params) 
@@ -88,7 +89,7 @@ class Trainer:
             print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.5)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.05)
         
         ll_loss = 1e5
         
@@ -148,8 +149,9 @@ class Trainer:
         test_dataset_numpy = test_dataset.cpu().clone().numpy()
         # self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
-        if precision[1] > 0.70:
+        if precision[1] > self.evaluate_percentage:
             self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
+        print(precision[0], recall[0])
         return precision[1], recall[1], loss
 
     # def evaluate(self, mask):
@@ -230,6 +232,8 @@ if __name__ == '__main__':
                         help="score, mask_num, max_score")
     parser.add_argument("--score_limit", type=int, default=60,
                         help="only choose the score above limit as postive samples")
+    parser.add_argument("--evaluate_percentage", type=float, default=0.7,
+                        help="when evaluate")
     parser.add_argument("--using_ligand_receptor", type=bool, default=True,
                         help="whether using the ligand receptor info")
 
