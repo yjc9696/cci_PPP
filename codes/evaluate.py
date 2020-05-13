@@ -134,9 +134,9 @@ class Evaluate:
         col = cci_gt_nonzero[:, 3]
         row = cci_gt_nonzero[:, 4]
 
-        test_fea = features[-len(self.cell_data)]
+        test_fea = features[-len(self.cell_data) : ]
         labels = self.cell2cluster['cluster'].tolist()
-
+        # import pdb; pdb.set_trace()
         tsne = dict()
         tsne['feature'] = test_fea
         tsne['labels'] = labels

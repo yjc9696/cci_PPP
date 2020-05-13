@@ -119,6 +119,9 @@ class Trainer:
             if epoch % 1 == 0:
                 precision, recall, train_loss = self.mse_evaluate(self.train_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, train loss: {train_loss}")
+                if train_loss < ll_loss:
+                    torch.save(self.model.state_dict(), self.save_model_path)
+                    ll_loss = train_loss
                 if self.params.just_train == 0:
                     precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
                     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")

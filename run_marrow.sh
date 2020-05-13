@@ -1,4 +1,4 @@
-python ./codes/train_mammary.py --data_dir mouse_bone_marrow1 \
+python ./codes/train_mammary_norm.py --data_dir mouse_bone_marrow1 \
 --train_dataset train_dataset \
 --test_dataset test_dataset \
 --cell_data_path mouse_bone_marrow_911_data.csv \
@@ -18,4 +18,8 @@ python ./codes/train_mammary.py --data_dir mouse_bone_marrow1 \
 --pretrained_model_path checkpoints/best_modelv_marrow.pth \
 --load_pretrained_model 0 \
 --save_model_path checkpoints/best_modelv_marrow.pth \
---score_limit 19
+--score_limit 19 \
+--score_type score \
+--using_ligand_receptor True \
+--reduction_ratio 10 \
+--evaluate_percentage -1

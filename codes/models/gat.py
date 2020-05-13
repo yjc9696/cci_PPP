@@ -35,6 +35,8 @@ class GAT(nn.Module):
         self.dense1_bn = nn.BatchNorm1d(n_hidden)
         self.linear2 = nn.Linear(n_hidden, n_classes)
 
+        self.linear_mse = nn.Linear(n_hidden, 1)
+
     def forward(self, g, h, x1, x2):
         
         for layer in self.layers:
@@ -47,5 +49,6 @@ class GAT(nn.Module):
         # mouse doesn't have bn
         # h = self.dense1_bn(h)
         h = F.relu(h)
-        h = self.linear2(h)
-        return h
+        h_c = self.linear2(h)
+        h_mse = self.linear_mse(h)
+        return h_c, h_mse

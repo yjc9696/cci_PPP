@@ -171,12 +171,13 @@ def load_mouse_mammary_gland(params):
             cci_labels += cur_cci_labels
         except Exception as e:
             pass
-        
+
+        # if is_test_dataset:
         junk_cci_labels = cci_labels_df.get_group(-1)
         print('unknown:')
         print(junk_cci_labels.describe())
         # score_limit = junk_cci_labels['score'].mean() * 1.2
-        junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*1]
+        junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*1000]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
         junk_cci_labels_data[0] = junk_cci_labels['id1']

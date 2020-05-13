@@ -8,7 +8,7 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
 --hidden_dim 40 \
 --lr 1e-3 \
 --n_epochs 200 \
---batch_size 32 \
+--batch_size 256 \
 --dropout 0.2 \
 --loss_weight 1 1 \
 --n_layers 2 \
@@ -18,5 +18,5 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
 --score_limit 60 \
 --score_type score \
 --using_ligand_receptor True \
---reduction_ratio 5 \
+--reduction_ratio 10 \
 --evaluate_percentage 0.7
