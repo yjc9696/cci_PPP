@@ -85,8 +85,8 @@ class Trainer:
         
         # self.loss_fn_classify = nn.CrossEntropyLoss(weight=self.loss_weight)
         # self.loss_fn = FocalLoss(gamma=2, alpha=0.25)
-        self.loss_fn = nn.BCEWithLogitsLoss().to(self.device)
-        # self.loss_fn = nn.MSELoss().to(self.device)
+        # self.loss_fn = nn.BCEWithLogitsLoss().to(self.device)
+        self.loss_fn = nn.MSELoss().to(self.device)
 
         #debug
         # self.test_dataset = self.train_dataset
@@ -108,8 +108,8 @@ class Trainer:
                 logits_classfiy, logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 # import pdb; pdb.set_trace()
                 # loss_classify = self.loss_fn_classify(logits_classfiy ,batch_y_classify)
-                loss = self.loss_fn(logits.squeeze_(), batch_y_classify.type(torch.float))
-                # loss = self.loss_fn(logits.squeeze_(), batch_y.type(torch.float))
+                # loss = self.loss_fn(logits.squeeze_(), batch_y_classify.type(torch.float))
+                loss = self.loss_fn(logits.squeeze_(), batch_y.type(torch.float))
                 
                 optimizer.zero_grad()
                 loss.backward()
@@ -119,14 +119,22 @@ class Trainer:
             if epoch % 1 == 0 and epoch > 2:
                 precision, recall, train_loss = self.mse_evaluate(self.train_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, train loss: {train_loss}")
+                
+                precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
+                print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
+                
+                if precision > 0.95 and recall > 0.95:
+                    precision, recall, test_loss = self.mse_test(self.test_dataset, self.test_score)
+                    print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
+
                 if train_loss < ll_loss:
                     torch.save(self.model.state_dict(), self.save_model_path)
                     ll_loss = train_loss
-                if self.params.just_train == 0:
-                    precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
-                    print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
-                    precision, recall, test_loss = self.mse_test(self.test_dataset, self.test_score)
-                    print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
+                # if self.params.just_train == 0:
+                #     precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
+                #     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
+                #     precision, recall, test_loss = self.mse_test(self.test_dataset, self.test_score)
+                #     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
 
     def mse_evaluate(self, mask):
         self.model.eval()
@@ -134,8 +142,8 @@ class Trainer:
         eval_score = self.train_score[mask]
         with torch.no_grad():
             _, logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
-            loss = self.loss_fn(logits.squeeze_(), eval_dataset[:, 2].type(torch.float))
-            # loss = self.loss_fn(logits.squeeze_(), eval_score)
+            # loss = self.loss_fn(logits.squeeze_(), eval_dataset[:, 2].type(torch.float))
+            loss = self.loss_fn(logits.squeeze_(), eval_score)
 
         indices = torch.ge(logits, 0).type(torch.int)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
@@ -146,8 +154,8 @@ class Trainer:
         self.model.eval()
         with torch.no_grad():
             _, logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
-            loss = self.loss_fn(logits.squeeze_(), test_dataset[:, 2].type(torch.float))
-            # loss = self.loss_fn(logits.squeeze_(), test_score)
+            # loss = self.loss_fn(logits.squeeze_(), test_dataset[:, 2].type(torch.float))
+            loss = self.loss_fn(logits.squeeze_(), test_score)
         indices = torch.ge(logits, 0).type(torch.int)
         indices_numpy = indices.cpu().clone().numpy()
         test_dataset_numpy = test_dataset.cpu().clone().numpy()

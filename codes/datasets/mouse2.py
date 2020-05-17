@@ -127,7 +127,7 @@ def load_mouse_mammary_gland(params):
         gt_cci_labels = cci_labels_df.get_group(1)
         print('gt:')
         print(gt_cci_labels.describe())
-        # score_limit = gt_cci_labels['score'].mean() * 1.2
+        score_limit = gt_cci_labels['score'].mean() * 1.2
         gt_cci_labels = gt_cci_labels[gt_cci_labels[score_type] > score_limit]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         gt_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -150,7 +150,7 @@ def load_mouse_mammary_gland(params):
             junk_cci_labels = cci_labels_df.get_group(0)
             print('junk:')
             print(junk_cci_labels.describe())
-            # score_limit = junk_cci_labels['score'].mean() * 1.2
+            score_limit = junk_cci_labels['score'].mean() * 1.2
             junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*0.8]
             # 3, 4记录cell真实id，方便构建cell cell interaction
             junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -177,7 +177,7 @@ def load_mouse_mammary_gland(params):
         junk_cci_labels = cci_labels_df.get_group(-1)
         print('unknown:')
         print(junk_cci_labels.describe())
-        # score_limit = junk_cci_labels['score'].mean() * 1.2
+        score_limit = junk_cci_labels['score'].mean() * 1.2
         junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*1]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -273,7 +273,7 @@ def load_mouse_mammary_gland(params):
         goes = gene2go['GO_ID']
         go_fre = Counter(goes)
         go_fre = sorted(go_fre.items(), key=lambda x: x[1], reverse=True)
-        go2id = {key[0]:idx for idx, key in enumerate(go_fre[:100])}
+        go2id = {key[0]:idx for idx, key in enumerate(go_fre[:1000])}
         gene2fun = {i:set() for i in range(num_genes)}
         for _, row in gene2go.iterrows():
             gene = gene2id[row['Symbol']]

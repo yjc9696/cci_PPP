@@ -3,22 +3,22 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine3 \
 --ligand_receptor_gene mouse_ligand_receptor_pair.csv \
 --train_dataset train_dataset \
 --test_dataset test_dataset \
---gpu 0 \
---dense_dim 80 \
---hidden_dim 40 \
---aggregator_type gcn \
+--gpu 1 \
+--dense_dim 100 \
+--hidden_dim 50 \
+--aggregator_type lstm \
 --lr 1e-3 \
 --n_epochs 200 \
---batch_size 256 \
+--batch_size 64 \
 --dropout 0.2 \
 --loss_weight 1 1 \
 --n_layers 2 \
 --pretrained_model_path checkpoints/best_modelv4.pth \
 --load_pretrained_model 0 \
 --save_model_path checkpoints/best_modelv4.pth \
---score_limit 80 \
+--score_limit 60 \
 --score_type score \
 --using_ligand_receptor 1 \
---using_func_nodes 0 \
---reduction_ratio 13 \
---evaluate_percentage 0.7
+--using_func_nodes 1 \
+--reduction_ratio 17 \
+--evaluate_percentage 0.0
