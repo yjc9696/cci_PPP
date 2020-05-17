@@ -6,6 +6,7 @@ python ./codes/train_mammary.py --data_dir mouse_small_intestine4 \
 --gpu 0 \
 --dense_dim 80 \
 --hidden_dim 40 \
+--aggregator_type mean \
 --lr 1e-4 \
 --n_epochs 200 \
 --batch_size 32 \
@@ -18,5 +19,6 @@ python ./codes/train_mammary.py --data_dir mouse_small_intestine4 \
 --score_limit 60 \
 --score_type mask_num \
 --using_ligand_receptor True \
+--using_func_nodes True \
 --reduction_ratio 20 \
 --evaluate_percentage 0.63

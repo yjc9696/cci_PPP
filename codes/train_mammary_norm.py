@@ -80,19 +80,24 @@ class Trainer:
         self.trainset = TrainSet(self.train_dataset[self.train_mask], self.train_score[self.train_mask])
         self.test_dataset = self.test_dataset.to(self.device)
         self.train_dataloader = DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True, drop_last=True)
-        self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
+        # self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         self.loss_weight = torch.Tensor(params.loss_weight).to(self.device)
         
-        self.loss_fn_classify = nn.CrossEntropyLoss(weight=self.loss_weight)
+        # self.loss_fn_classify = nn.CrossEntropyLoss(weight=self.loss_weight)
         # self.loss_fn = FocalLoss(gamma=2, alpha=0.25)
-        self.loss_fn = nn.MSELoss().to(self.device)
+        self.loss_fn = nn.BCEWithLogitsLoss().to(self.device)
+        # self.loss_fn = nn.MSELoss().to(self.device)
+
+        #debug
+        # self.test_dataset = self.train_dataset
+        # self.test_score = self.train_score
 
     def train(self):
         if self.load_pretrained_model:
             print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.01)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.1)
         
         ll_loss = 1e5
         
@@ -103,20 +108,15 @@ class Trainer:
                 logits_classfiy, logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 # import pdb; pdb.set_trace()
                 # loss_classify = self.loss_fn_classify(logits_classfiy ,batch_y_classify)
-                loss = self.loss_fn(logits.squeeze_(), batch_y.type(torch.float))
+                loss = self.loss_fn(logits.squeeze_(), batch_y_classify.type(torch.float))
+                # loss = self.loss_fn(logits.squeeze_(), batch_y.type(torch.float))
                 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 
-            # _, _, train_loss = self.mse_evaluate(self.train_mask)
-            # precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
-                
-            # if train_loss < ll_loss:
-            #     torch.save(self.model.state_dict(), self.save_model_path)
-            #     ll_loss = train_loss
-            # import pdb; pdb.set_trace()
-            if epoch % 1 == 0:
+
+            if epoch % 1 == 0 and epoch > 2:
                 precision, recall, train_loss = self.mse_evaluate(self.train_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, train loss: {train_loss}")
                 if train_loss < ll_loss:
@@ -134,22 +134,21 @@ class Trainer:
         eval_score = self.train_score[mask]
         with torch.no_grad():
             _, logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
-            loss = self.loss_fn(logits.squeeze_(), eval_score)
-            # import pdb; pdb.set_trace()
-            # print('2')
+            loss = self.loss_fn(logits.squeeze_(), eval_dataset[:, 2].type(torch.float))
+            # loss = self.loss_fn(logits.squeeze_(), eval_score)
+
         indices = torch.ge(logits, 0).type(torch.int)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
-        # import pdb; pdb.set_trace()
+ 
         return precision[1], recall[1], loss
 
     def mse_test(self, test_dataset, test_score):
         self.model.eval()
         with torch.no_grad():
             _, logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
-            loss = self.loss_fn(logits.squeeze_(), test_score)
+            loss = self.loss_fn(logits.squeeze_(), test_dataset[:, 2].type(torch.float))
+            # loss = self.loss_fn(logits.squeeze_(), test_score)
         indices = torch.ge(logits, 0).type(torch.int)
-        # print(len(indices), indices.sum().item())
-        # import pdb; pdb.set_trace()
         indices_numpy = indices.cpu().clone().numpy()
         test_dataset_numpy = test_dataset.cpu().clone().numpy()
         # self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
@@ -240,11 +239,15 @@ if __name__ == '__main__':
                         help="only choose the score above limit as postive samples")
     parser.add_argument("--evaluate_percentage", type=float, default=0.7,
                         help="when evaluate")
-    parser.add_argument("--using_ligand_receptor", type=bool, default=True,
+    parser.add_argument("--using_ligand_receptor", type=int, default=1,
                         help="whether using the ligand receptor info")
+    parser.add_argument("--using_func_nodes", type=int, default=1,
+                        help="whether using the function nodes")
 
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
-                        help="cluster - cluster interaction depleted")
+                        help="ligand receptor gene")
+    parser.add_argument("--gene2go", type=str, default='mouse_gene2go.csv',
+                        help="gene to GO")
     parser.add_argument("--data_dir", type=str, default='small_intestine_bone_marrow',
                         help="root path of the data dir")
     parser.add_argument("--cell_data_path", type=str, default='mouse_small_intestine_1189_data.csv',

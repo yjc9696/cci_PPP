@@ -234,11 +234,15 @@ if __name__ == '__main__':
                         help="only choose the score above limit as postive samples")
     parser.add_argument("--evaluate_percentage", type=float, default=0.7,
                         help="when evaluate")
-    parser.add_argument("--using_ligand_receptor", type=bool, default=True,
+    parser.add_argument("--using_ligand_receptor", type=int, default=1,
                         help="whether using the ligand receptor info")
+    parser.add_argument("--using_func_nodes", type=int, default=1,
+                        help="whether using the function nodes")
 
     parser.add_argument("--ligand_receptor_gene", type=str, default='mouse_ligand_receptor_pair.csv',
-                        help="cluster - cluster interaction depleted")
+                        help="ligand receptor gene")
+    parser.add_argument("--gene2go", type=str, default='mouse_gene2go.csv',
+                        help="gene to GO")
     parser.add_argument("--data_dir", type=str, default='small_intestine_bone_marrow',
                         help="root path of the data dir")
     parser.add_argument("--cell_data_path", type=str, default='mouse_small_intestine_1189_data.csv',

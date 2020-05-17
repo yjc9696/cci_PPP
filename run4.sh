@@ -1,4 +1,4 @@
-python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
+python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine3 \
 --cell_data_path mouse_small_intestine_1189_data.csv \
 --ligand_receptor_gene mouse_ligand_receptor_pair.csv \
 --train_dataset train_dataset \
@@ -6,6 +6,7 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
 --gpu 0 \
 --dense_dim 80 \
 --hidden_dim 40 \
+--aggregator_type gcn \
 --lr 1e-3 \
 --n_epochs 200 \
 --batch_size 256 \
@@ -15,8 +16,9 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
 --pretrained_model_path checkpoints/best_modelv4.pth \
 --load_pretrained_model 0 \
 --save_model_path checkpoints/best_modelv4.pth \
---score_limit 60 \
+--score_limit 80 \
 --score_type score \
---using_ligand_receptor True \
---reduction_ratio 10 \
+--using_ligand_receptor 1 \
+--using_func_nodes 0 \
+--reduction_ratio 13 \
 --evaluate_percentage 0.7
