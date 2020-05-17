@@ -97,7 +97,8 @@ class Trainer:
             print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.1)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.01)
+        # optimizer = torch.optim.SGD(self.model.parameters(), lr=self.params.lr, weight_decay=0.01, momentum=0.9)
         
         ll_loss = 1e5
         
@@ -123,18 +124,13 @@ class Trainer:
                 precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
                 
-                if precision > 0.95 and recall > 0.95:
+                if precision > 0.2 or recall > 0.2:
                     precision, recall, test_loss = self.mse_test(self.test_dataset, self.test_score)
                     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
 
                 if train_loss < ll_loss:
                     torch.save(self.model.state_dict(), self.save_model_path)
                     ll_loss = train_loss
-                # if self.params.just_train == 0:
-                #     precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
-                #     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
-                #     precision, recall, test_loss = self.mse_test(self.test_dataset, self.test_score)
-                #     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
 
     def mse_evaluate(self, mask):
         self.model.eval()

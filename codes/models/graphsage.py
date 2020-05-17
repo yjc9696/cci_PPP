@@ -43,6 +43,10 @@ class GraphSAGE(nn.Module):
         self.linear2 = nn.Linear(n_hidden, n_classes)
         self.linear_mse = nn.Linear(n_hidden, 1)
 
+        # torch.nn.init.xavier_uniform_(self.linear1.weight)
+        # torch.nn.init.xavier_uniform_(self.linear2.weight)
+        # torch.nn.init.xavier_uniform_(self.linear_mse.weight)
+
 
     def forward(self, g, h, x1, x2):
         for layer in self.layers:

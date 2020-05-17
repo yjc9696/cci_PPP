@@ -127,7 +127,7 @@ def load_mouse_mammary_gland(params):
         gt_cci_labels = cci_labels_df.get_group(1)
         print('gt:')
         print(gt_cci_labels.describe())
-        score_limit = gt_cci_labels['score'].mean() * 1.2
+        # score_limit = gt_cci_labels['score'].mean() * 1.2
         gt_cci_labels = gt_cci_labels[gt_cci_labels[score_type] > score_limit]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         gt_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -150,7 +150,7 @@ def load_mouse_mammary_gland(params):
             junk_cci_labels = cci_labels_df.get_group(0)
             print('junk:')
             print(junk_cci_labels.describe())
-            score_limit = junk_cci_labels['score'].mean() * 1.2
+            # score_limit = junk_cci_labels['score'].mean() * 1.2
             junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*0.8]
             # 3, 4记录cell真实id，方便构建cell cell interaction
             junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -177,7 +177,7 @@ def load_mouse_mammary_gland(params):
         junk_cci_labels = cci_labels_df.get_group(-1)
         print('unknown:')
         print(junk_cci_labels.describe())
-        score_limit = junk_cci_labels['score'].mean() * 1.2
+        # score_limit = junk_cci_labels['score'].mean() * 1.2
         junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*1]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -214,14 +214,14 @@ def load_mouse_mammary_gland(params):
             matrices.append(info)
             # add more nodes because of new cells
             graph.add_nodes(len(df))
-            graph.add_edges(src_idx, tgt_idx)
+            # graph.add_edges(src_idx, tgt_idx)
             graph.add_edges(tgt_idx, src_idx)
         else:
             test_cci_labels += cci_labels
 
         matrices_test.append(info)
         graph_test.add_nodes(len(df))
-        graph_test.add_edges(src_idx, tgt_idx)
+        # graph_test.add_edges(src_idx, tgt_idx)
         graph_test.add_edges(tgt_idx, src_idx)
 
         print(f'Added {len(df)} nodes and {len(src_idx)} edges.')

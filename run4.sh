@@ -6,7 +6,7 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine3 \
 --gpu 1 \
 --dense_dim 100 \
 --hidden_dim 50 \
---aggregator_type lstm \
+--aggregator_type mean \
 --lr 1e-3 \
 --n_epochs 200 \
 --batch_size 64 \
@@ -16,9 +16,9 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine3 \
 --pretrained_model_path checkpoints/best_modelv4.pth \
 --load_pretrained_model 0 \
 --save_model_path checkpoints/best_modelv4.pth \
---score_limit 60 \
+--score_limit 50 \
 --score_type score \
 --using_ligand_receptor 1 \
 --using_func_nodes 1 \
---reduction_ratio 17 \
---evaluate_percentage 0.0
+--reduction_ratio 20 \
+--evaluate_percentage 0.7

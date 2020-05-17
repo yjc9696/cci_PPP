@@ -78,15 +78,15 @@ class Evaluate:
         """evaluate the predict result with 10% percentage
         
         Args:
-            cci_gt (np.array pair_num*5): [cell1, cell2, relation, cell_id1, cell_id2]
+            cci_gt (np.array pair_num*6): [cell1, cell2, relation, score, cell_id1, cell_id2]
             cci_predict (np.array, pair_num * 1): [labels]
         """
         # indices predicted positive by the model
         nonzero = cci_predict.nonzero()[0]
         # get these pairs
         cci_gt_nonzero = cci_gt[nonzero]
-        col = cci_gt_nonzero[:, 3]
-        row = cci_gt_nonzero[:, 4]
+        col = cci_gt_nonzero[:, 4]
+        row = cci_gt_nonzero[:, 5]
 
         adj = np.zeros((len(self.cell_data), len(self.cell_data)))
         adj[row, col] = 1
@@ -123,7 +123,7 @@ class Evaluate:
         
         Args:
             cci_predict (np.array, pair_num * 1): [labels]
-            cci_gt (np.array pair_num*5): [cell1, cell2, relation, cell_id1, cell_id2]
+            cci_gt (np.array pair_num*6): [cell1, cell2, relation, score, cell_id1, cell_id2]
             features (np.array) (num_genes + num_train_nodes + num_test_nodes) * dim, only need test node fea.
             
         """
@@ -131,8 +131,8 @@ class Evaluate:
         nonzero = cci_predict.nonzero()[0]
         # get these pairs
         cci_gt_nonzero = cci_gt[nonzero]
-        col = cci_gt_nonzero[:, 3]
-        row = cci_gt_nonzero[:, 4]
+        col = cci_gt_nonzero[:, 4]
+        row = cci_gt_nonzero[:, 5]
 
         test_fea = features[-len(self.cell_data) : ]
         labels = self.cell2cluster['cluster'].tolist()
