@@ -43,25 +43,25 @@ class Trainer:
         # self.features = self.vae.get_hidden(self.features)
         # model
         # self.num_classes = 1
-        self.model = GraphSAGE(in_feats=params.dense_dim,
-                               n_hidden=params.hidden_dim,
-                               n_classes=self.num_classes,
-                               n_layers=params.n_layers,
-                               activation=F.relu,
-                               dropout=params.dropout,
-                               aggregator_type=params.aggregator_type,
-                               num_genes=self.num_genes)
+        # self.model = GraphSAGE(in_feats=params.dense_dim,
+        #                        n_hidden=params.hidden_dim,
+        #                        n_classes=self.num_classes,
+        #                        n_layers=params.n_layers,
+        #                        activation=F.relu,
+        #                        dropout=params.dropout,
+        #                        aggregator_type=params.aggregator_type,
+        #                        num_genes=self.num_genes)
         # self.model = GCN(
         #                  in_feats=params.dense_dim,
         #                  n_hidden=params.hidden_dim,
         #                  n_classes=self.num_classes,
         #                  n_layers=params.n_layers,
         #                  activation=F.relu)
-        # self.model = GAT(in_feats=params.dense_dim,
-        #                  n_hidden=params.hidden_dim,
-        #                  n_classes=self.num_classes,
-        #                  n_layers=params.n_layers,
-        #                  activation=F.relu)
+        self.model = GAT(in_feats=params.dense_dim,
+                         n_hidden=params.hidden_dim,
+                         n_classes=self.num_classes,
+                         n_layers=params.n_layers,
+                         activation=F.relu)
         self.graph.readonly(readonly_state=True)
         self.graph_test.readonly(readonly_state=True)
         self.model.to(self.device)
@@ -97,7 +97,7 @@ class Trainer:
             print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.01)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.0001)
         # optimizer = torch.optim.SGD(self.model.parameters(), lr=self.params.lr, weight_decay=0.01, momentum=0.9)
         
         ll_loss = 1e5

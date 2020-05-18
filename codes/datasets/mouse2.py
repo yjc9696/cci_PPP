@@ -289,36 +289,37 @@ def load_mouse_mammary_gland(params):
 
         # add edges to the graph
 
-        src, tar = graph.edges()
+        src, tar = graph_test.edges()
 
-        cell_mask = src > num_genes # cell id
-        src = src[cell_mask] # cell id
-        tar = tar[cell_mask] # gene id
-        src = torch.unsqueeze(src, 1) # N*1 dim
+        cell_mask = tar > num_genes # cell id
+        src = src[cell_mask] # gene id
+        tar = tar[cell_mask] # cell id
+        tar = torch.unsqueeze(tar, 1) # N*1 dim
         # tar = torch.unsqueeze(tar, 1)
-        assert torch.sum(tar>num_genes).item() == 0, 'error'
-        assert torch.sum(src>num_genes).item() == len(src), 'error'
+        assert torch.sum(src>num_genes).item() == 0, 'error'
+        assert torch.sum(tar>num_genes).item() == len(tar), 'error'
 
-        tar = list(map(lambda x:gene2fun[x], tar.tolist())) # function nodes id
+        src = list(map(lambda x:gene2fun[x], src.tolist())) # function nodes id
 
         # import pdb; pdb.set_trace()
-        new_src = list()
-        new_tar = list()
+        new_src = list() # function nodes
+        new_tar = list() # cell nodes
         exist_edge = set()
-        for s, t in zip(src.tolist(), tar):
-            s = s*len(t)
+        for s, t in zip(src, tar.tolist()):
+            t = t*len(s)
             for i,j in zip(s,t):
                 if (i,j) not in exist_edge:
                     new_src.append(i)
                     new_tar.append(j)
                     exist_edge.add((i,j))
 
-        new_src = torch.tensor(new_src)
-        new_tar = torch.tensor(new_tar) +num_cells + num_genes
+        new_src = torch.tensor(new_src) + num_cells + num_genes
+        new_tar = torch.tensor(new_tar) # cell nodes
+
 
         graph_test.add_nodes(len(go2id))
         graph_test.add_edges(new_src, new_tar)
-        graph_test.add_edges(new_tar, new_src)
+        # graph_test.add_edges(new_tar, new_src)
         print(f'added {len(go2id)} function nodes')
         print(f'added {len(new_src)} cell to function edges')
 
@@ -332,7 +333,9 @@ def load_mouse_mammary_gland(params):
                 gene_src.append(i)
                 func_tar.append(j)
         src = torch.tensor(gene_src)
+        assert torch.sum(src > num_genes) == 0, 'error'
         tar = torch.tensor(func_tar) + num_cells + num_genes
+        assert torch.sum(tar >= num_cells+num_genes+len(go2id)) == 0, 'error'
         graph_test.add_edges(src, tar)
         graph_test.add_edges(tar, src)
         print(f'added {len(src)} gene to function edges')

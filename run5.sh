@@ -6,7 +6,7 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
 --gpu 1 \
 --dense_dim 100 \
 --hidden_dim 50 \
---aggregator_type gcn \
+--aggregator_type mean \
 --lr 1e-4 \
 --n_epochs 200 \
 --batch_size 64 \
@@ -21,4 +21,4 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
 --using_ligand_receptor 1 \
 --using_func_nodes 1 \
 --reduction_ratio 6 \
---evaluate_percentage 0.0
+--evaluate_percentage 0.6
