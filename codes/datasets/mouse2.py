@@ -90,10 +90,10 @@ def load_mouse_mammary_gland(params):
     # add gene edges: ligand and receptor
     if using_ligand_receptor:
         for i, j in zip(exist_ligand, exist_receptor):
-            graph.add_edge(gene2id[i], gene2id[j])
-            graph.add_edge(gene2id[j], gene2id[i])
-            graph_test.add_edge(gene2id[i], gene2id[j])
-            graph_test.add_edge(gene2id[j], gene2id[i])
+            graph.add_edge(gene2id[i], gene2id[j], {'w': torch.ones(1)})
+            graph.add_edge(gene2id[j], gene2id[i], {'w': torch.ones(1)})
+            graph_test.add_edge(gene2id[i], gene2id[j], {'w': torch.ones(1)})
+            graph_test.add_edge(gene2id[j], gene2id[i], {'w': torch.ones(1)})
 
     matrices = []
     matrices_test = []
@@ -127,7 +127,7 @@ def load_mouse_mammary_gland(params):
         gt_cci_labels = cci_labels_df.get_group(1)
         print('gt:')
         print(gt_cci_labels.describe())
-        # score_limit = gt_cci_labels['score'].mean() * 1.2
+        score_limit = gt_cci_labels['score'].mean() * 1.2
         gt_cci_labels = gt_cci_labels[gt_cci_labels[score_type] > score_limit]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         gt_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -150,7 +150,7 @@ def load_mouse_mammary_gland(params):
             junk_cci_labels = cci_labels_df.get_group(0)
             print('junk:')
             print(junk_cci_labels.describe())
-            # score_limit = junk_cci_labels['score'].mean() * 1.2
+            score_limit = junk_cci_labels['score'].mean() * 1.2
             junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*0.8]
             # 3, 4记录cell真实id，方便构建cell cell interaction
             junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -177,7 +177,7 @@ def load_mouse_mammary_gland(params):
         junk_cci_labels = cci_labels_df.get_group(-1)
         print('unknown:')
         print(junk_cci_labels.describe())
-        # score_limit = junk_cci_labels['score'].mean() * 1.2
+        score_limit = junk_cci_labels['score'].mean() * 1.2
         junk_cci_labels = junk_cci_labels[junk_cci_labels[score_type] > score_limit*1]
         # 3, 4记录cell真实id，方便构建cell cell interaction
         junk_cci_labels_data = pd.DataFrame(columns=[0,1,2,3,4,5])
@@ -214,16 +214,18 @@ def load_mouse_mammary_gland(params):
             matrices.append(info)
             # add more nodes because of new cells
             graph.add_nodes(len(df))
-            # graph.add_edges(src_idx, tgt_idx)
-            graph.add_edges(tgt_idx, src_idx)
+            # import pdb; pdb.set_trace()
+            assert len(non_zeros) == len(src_idx), 'error'
+            graph.add_edges(tgt_idx, src_idx, {'w': torch.tensor(non_zeros).type(torch.float)})
         else:
             test_cci_labels += cci_labels
 
         matrices_test.append(info)
         graph_test.add_nodes(len(df))
-        # graph_test.add_edges(src_idx, tgt_idx)
-        graph_test.add_edges(tgt_idx, src_idx)
-
+        # import pdb; pdb.set_trace()
+        assert len(non_zeros) == len(src_idx), 'error'
+        graph_test.add_edges(tgt_idx, src_idx, {'w': torch.tensor(non_zeros).type(torch.float)})
+        
         print(f'Added {len(df)} nodes and {len(src_idx)} edges.')
         print(f'#Nodes: {graph_test.number_of_nodes()}, #Edges: {graph_test.number_of_edges()}.')
         print(f'Costs {time() - start:.3f} s in total.\n')
@@ -318,8 +320,8 @@ def load_mouse_mammary_gland(params):
 
 
         graph_test.add_nodes(len(go2id))
-        graph_test.add_edges(new_src, new_tar)
-        # graph_test.add_edges(new_tar, new_src)
+        graph_test.add_edges(new_src, new_tar, {'w': torch.ones(len(new_tar))})
+       
         print(f'added {len(go2id)} function nodes')
         print(f'added {len(new_src)} cell to function edges')
 
@@ -336,13 +338,15 @@ def load_mouse_mammary_gland(params):
         assert torch.sum(src > num_genes) == 0, 'error'
         tar = torch.tensor(func_tar) + num_cells + num_genes
         assert torch.sum(tar >= num_cells+num_genes+len(go2id)) == 0, 'error'
-        graph_test.add_edges(src, tar)
-        graph_test.add_edges(tar, src)
+        graph_test.add_edges(src, tar, {'w': torch.ones(len(tar))})
+        graph_test.add_edges(tar, src, {'w': torch.ones(len(src))})
         print(f'added {len(src)} gene to function edges')
 
         func_fea = torch.rand( (len(go2id), features_test.shape[1]) )
         features_test = torch.cat([features_test, func_fea], dim=0).type(torch.float)
 
+    # add weighs for edges of the graph_test
+    # assert graph_test.edata['w'].sum() == graph_test.number_of_edges(), 'error'
     # 5. then create masks for different purposes.
 
     train_cci_labels = torch.LongTensor(train_cci_labels)

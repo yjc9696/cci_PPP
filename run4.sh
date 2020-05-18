@@ -21,4 +21,4 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine3 \
 --using_ligand_receptor 1 \
 --using_func_nodes 1 \
 --reduction_ratio 16 \
---evaluate_percentage 0.63
+--evaluate_percentage 0.7

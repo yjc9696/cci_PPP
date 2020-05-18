@@ -9,6 +9,7 @@ import pandas as pd
 import random
 from multiprocessing import Process, Queue
 import pickle as pkl
+import math
 
 class Evaluate:
     def __init__(self, params):
@@ -87,36 +88,73 @@ class Evaluate:
         cci_gt_nonzero = cci_gt[nonzero]
         col = cci_gt_nonzero[:, 4]
         row = cci_gt_nonzero[:, 5]
+        
 
         adj = np.zeros((len(self.cell_data), len(self.cell_data)))
         adj[row, col] = 1
         adj[col, row] = 1
-
         # import pdb; pdb.set_trace()
         for pair in self.cluster_pairs_enriched:
             type1, type2 = pair
             idx1 = self.cluster2cell[type1]
             idx2 = self.cluster2cell[type2]
-            total = len(idx1) * len(idx2)
+            total = math.sqrt(len(idx1) * len(idx2))
             # import pdb; pdb.set_trace()
-            hit = adj[idx1][:, idx2].sum()
-            print(f'enriched: hit {hit}, total {total}, ratio {hit/total} ')
+            row1, _ = adj.nonzero()
+            ratio1 = len(set(idx1).intersection(set(row1))) / len(idx1)
+            ratio2 = len(set(idx2).intersection(set(row1))) / len(idx2)
+            
+            print(f'enriched: hit ratio {ratio1*ratio2} ')
         
         for pair in self.cluster_pairs_depleted:
             type1, type2 = pair
             idx1 = self.cluster2cell[type1]
             idx2 = self.cluster2cell[type2]
-            total = len(idx1) * len(idx2)
-            hit = adj[idx1][:, idx2].sum()
-            print(f'depleted: hit {hit}, total {total}, ratio {hit/total} ')
+            total = math.sqrt(len(idx1) * len(idx2))
+            # import pdb; pdb.set_trace()
+            row1, _ = adj.nonzero()
+            ratio1 = len(set(idx1).intersection(set(row1))) / len(idx1)
+            ratio2 = len(set(idx2).intersection(set(row1))) / len(idx2)
+            
+            print(f'depleted: hit ratio {ratio1*ratio2} ')
         
         for pair in self.cluster_pairs_unknown:
             type1, type2 = pair
             idx1 = self.cluster2cell[type1]
             idx2 = self.cluster2cell[type2]
-            total = len(idx1) * len(idx2)
-            hit = adj[idx1][:, idx2].sum()
-            print(f'unknown: hit {hit}, total {total}, ratio {hit/total} ')
+            total = math.sqrt(len(idx1) * len(idx2))
+            # import pdb; pdb.set_trace()
+            row1, _ = adj.nonzero()
+            ratio1 = len(set(idx1).intersection(set(row1))) / len(idx1)
+            ratio2 = len(set(idx2).intersection(set(row1))) / len(idx2)
+            
+            print(f'unknown: hit ratio {ratio1*ratio2} ')
+
+        # # import pdb; pdb.set_trace()
+        # for pair in self.cluster_pairs_enriched:
+        #     type1, type2 = pair
+        #     idx1 = self.cluster2cell[type1]
+        #     idx2 = self.cluster2cell[type2]
+        #     total = len(idx1) * len(idx2)
+        #     # import pdb; pdb.set_trace()
+        #     hit = adj[idx1][:, idx2].sum()
+        #     print(f'enriched: hit {hit}, total {total}, ratio {hit/total} ')
+        
+        # for pair in self.cluster_pairs_depleted:
+        #     type1, type2 = pair
+        #     idx1 = self.cluster2cell[type1]
+        #     idx2 = self.cluster2cell[type2]
+        #     total = len(idx1) * len(idx2)
+        #     hit = adj[idx1][:, idx2].sum()
+        #     print(f'depleted: hit {hit}, total {total}, ratio {hit/total} ')
+        
+        # for pair in self.cluster_pairs_unknown:
+        #     type1, type2 = pair
+        #     idx1 = self.cluster2cell[type1]
+        #     idx2 = self.cluster2cell[type2]
+        #     total = len(idx1) * len(idx2)
+        #     hit = adj[idx1][:, idx2].sum()
+        #     print(f'unknown: hit {hit}, total {total}, ratio {hit/total} ')
         
     def evaluate_with_permuation(self, cci_predict, cci_gt, features, num=10000):
         """evaluate the predicted result with permuation

@@ -14,7 +14,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 # self-defined
 from datasets import load_mouse_mammary_gland, load_tissue, TrainSet
-from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2, FocalLoss
+from models import GraphSAGE, GCN, GAT, VAE, mix_rbf_mmd2, FocalLoss, WeightedGraphSAGE
 from torchlight import set_seed
 import random
 from evaluate import Evaluate
@@ -43,7 +43,15 @@ class Trainer:
         # self.features = self.vae.get_hidden(self.features)
         # model
         # self.num_classes = 1
-        self.model = GraphSAGE(in_feats=params.dense_dim,
+        # self.model = GraphSAGE(in_feats=params.dense_dim,
+        #                        n_hidden=params.hidden_dim,
+        #                        n_classes=self.num_classes,
+        #                        n_layers=params.n_layers,
+        #                        activation=F.relu,
+        #                        dropout=params.dropout,
+        #                        aggregator_type=params.aggregator_type,
+        #                        num_genes=self.num_genes)
+        self.model = WeightedGraphSAGE(in_feats=params.dense_dim,
                                n_hidden=params.hidden_dim,
                                n_classes=self.num_classes,
                                n_layers=params.n_layers,
@@ -64,6 +72,7 @@ class Trainer:
         #                  activation=F.relu)
         self.graph.readonly(readonly_state=True)
         self.graph_test.readonly(readonly_state=True)
+        self.graph_test.to(self.device)
         self.model.to(self.device)
         self.features = self.features.to(self.device)
         self.features_test = self.features_test.to(self.device)
@@ -116,8 +125,7 @@ class Trainer:
                 loss.backward()
                 optimizer.step()
                 
-
-            if epoch % 1 == 0 and epoch > 2:
+            if epoch % 1 == 0 and epoch > 0:
                 precision, recall, train_loss = self.mse_evaluate(self.train_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, train loss: {train_loss}")
                 
@@ -159,6 +167,7 @@ class Trainer:
         # self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(test_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
         if precision[1] > self.evaluate_percentage:
+            # self.eval.evaluate_with_percentage(indices_numpy, test_dataset_numpy)
             self.eval.evaluate_with_permuation(indices_numpy, test_dataset_numpy, self.features_test.cpu().clone().numpy())
         print(precision[0], recall[0])
         return precision[1], recall[1], loss

@@ -1,4 +1,4 @@
-python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
+python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine2 \
 --cell_data_path mouse_small_intestine_1189_data.csv \
 --ligand_receptor_gene mouse_ligand_receptor_pair.csv \
 --train_dataset train_dataset \
@@ -9,7 +9,7 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
 --aggregator_type mean \
 --lr 1e-3 \
 --n_epochs 200 \
---batch_size 64 \
+--batch_size 256 \
 --dropout 0.2 \
 --loss_weight 1 1 \
 --n_layers 2 \
@@ -20,5 +20,5 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine4 \
 --score_type score \
 --using_ligand_receptor 1 \
 --using_func_nodes 1 \
---reduction_ratio 3 \
---evaluate_percentage 0.2
+--reduction_ratio 1 \
+--evaluate_percentage 0.65

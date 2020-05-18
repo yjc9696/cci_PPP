@@ -1,3 +1,24 @@
-python codes/data_analyze/split_dataset.py --data_dir mouse_small_intestine4 --train_cluster 4 6 7 8 10 11 12 13 14 16 18 --test_cluster 1 2 3 5 9 15 17 19
-python codes/data_analyze/all_pairs.py --data_dir mouse_small_intestine4 --dataset train_dataset --clusters 4 6 7 8 10 11 12 13 14 16 18
-python codes/data_analyze/all_pairs.py --data_dir mouse_small_intestine4 --dataset test_dataset --clusters 1 2 3 5 9 15 17 19
+python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine2 \
+--cell_data_path mouse_small_intestine_1189_data.csv \
+--ligand_receptor_gene mouse_ligand_receptor_pair.csv \
+--train_dataset train_dataset \
+--test_dataset test_dataset \
+--gpu 1 \
+--dense_dim 100 \
+--hidden_dim 50 \
+--aggregator_type mean \
+--lr 1e-3 \
+--n_epochs 2000 \
+--batch_size 256 \
+--dropout 0.3 \
+--loss_weight 1 1 \
+--n_layers 2 \
+--pretrained_model_path checkpoints/best_modelv3.pth \
+--load_pretrained_model 0 \
+--save_model_path checkpoints/best_modelv3.pth \
+--score_limit 70 \
+--score_type score \
+--using_ligand_receptor 1 \
+--using_func_nodes 1 \
+--reduction_ratio 1 \
+--evaluate_percentage 0.7
