@@ -7,9 +7,9 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine3 \
 --dense_dim 100 \
 --hidden_dim 50 \
 --aggregator_type mean \
---lr 1e-4 \
---n_epochs 200 \
---batch_size 64 \
+--lr 1e-3 \
+--n_epochs 2000 \
+--batch_size 256 \
 --dropout 0.3 \
 --loss_weight 1 1 \
 --n_layers 2 \
@@ -21,4 +21,4 @@ python ./codes/train_mammary_norm.py --data_dir mouse_small_intestine3 \
 --using_ligand_receptor 1 \
 --using_func_nodes 1 \
 --reduction_ratio 16 \
---evaluate_percentage 0.7
+--evaluate_percentage 0.63

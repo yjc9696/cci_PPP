@@ -43,25 +43,25 @@ class Trainer:
         # self.features = self.vae.get_hidden(self.features)
         # model
         # self.num_classes = 1
-        # self.model = GraphSAGE(in_feats=params.dense_dim,
-        #                        n_hidden=params.hidden_dim,
-        #                        n_classes=self.num_classes,
-        #                        n_layers=params.n_layers,
-        #                        activation=F.relu,
-        #                        dropout=params.dropout,
-        #                        aggregator_type=params.aggregator_type,
-        #                        num_genes=self.num_genes)
+        self.model = GraphSAGE(in_feats=params.dense_dim,
+                               n_hidden=params.hidden_dim,
+                               n_classes=self.num_classes,
+                               n_layers=params.n_layers,
+                               activation=F.relu,
+                               dropout=params.dropout,
+                               aggregator_type=params.aggregator_type,
+                               num_genes=self.num_genes)
         # self.model = GCN(
         #                  in_feats=params.dense_dim,
         #                  n_hidden=params.hidden_dim,
         #                  n_classes=self.num_classes,
         #                  n_layers=params.n_layers,
         #                  activation=F.relu)
-        self.model = GAT(in_feats=params.dense_dim,
-                         n_hidden=params.hidden_dim,
-                         n_classes=self.num_classes,
-                         n_layers=params.n_layers,
-                         activation=F.relu)
+        # self.model = GAT(in_feats=params.dense_dim,
+        #                  n_hidden=params.hidden_dim,
+        #                  n_classes=self.num_classes,
+        #                  n_layers=params.n_layers,
+        #                  activation=F.relu)
         self.graph.readonly(readonly_state=True)
         self.graph_test.readonly(readonly_state=True)
         self.model.to(self.device)
@@ -85,8 +85,8 @@ class Trainer:
         
         # self.loss_fn_classify = nn.CrossEntropyLoss(weight=self.loss_weight)
         # self.loss_fn = FocalLoss(gamma=2, alpha=0.25)
-        # self.loss_fn = nn.BCEWithLogitsLoss().to(self.device)
-        self.loss_fn = nn.MSELoss().to(self.device)
+        self.loss_fn = nn.BCEWithLogitsLoss().to(self.device)
+        # self.loss_fn = nn.MSELoss().to(self.device)
 
         #debug
         # self.test_dataset = self.train_dataset
@@ -109,8 +109,8 @@ class Trainer:
                 logits_classfiy, logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 # import pdb; pdb.set_trace()
                 # loss_classify = self.loss_fn_classify(logits_classfiy ,batch_y_classify)
-                # loss = self.loss_fn(logits.squeeze_(), batch_y_classify.type(torch.float))
-                loss = self.loss_fn(logits.squeeze_(), batch_y.type(torch.float))
+                loss = self.loss_fn(logits.squeeze_(), batch_y_classify.type(torch.float))
+                # loss = self.loss_fn(logits.squeeze_(), batch_y.type(torch.float))
                 
                 optimizer.zero_grad()
                 loss.backward()
@@ -124,7 +124,7 @@ class Trainer:
                 precision, recall, vali_loss = self.mse_evaluate(self.vali_mask)
                 print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, vali loss: {vali_loss}")
                 
-                if precision > 0.2 or recall > 0.2:
+                if precision > 0.7 and recall > 0.7:
                     precision, recall, test_loss = self.mse_test(self.test_dataset, self.test_score)
                     print(f"Epoch {epoch:04d}: precesion {precision:.5f}, recall {recall:05f}, test loss: {test_loss}")
 
@@ -138,8 +138,8 @@ class Trainer:
         eval_score = self.train_score[mask]
         with torch.no_grad():
             _, logits = self.model(self.graph, self.features, eval_dataset[:, 0], eval_dataset[:, 1])
-            # loss = self.loss_fn(logits.squeeze_(), eval_dataset[:, 2].type(torch.float))
-            loss = self.loss_fn(logits.squeeze_(), eval_score)
+            loss = self.loss_fn(logits.squeeze_(), eval_dataset[:, 2].type(torch.float))
+            # loss = self.loss_fn(logits.squeeze_(), eval_score)
 
         indices = torch.ge(logits, 0).type(torch.int)
         precision, recall, f1_score, _ = sklearn.metrics.precision_recall_fscore_support(eval_dataset[:,2].tolist(), indices.tolist(), labels=[0,1])
@@ -150,8 +150,8 @@ class Trainer:
         self.model.eval()
         with torch.no_grad():
             _, logits = self.model(self.graph_test, self.features_test, test_dataset[:, 0], test_dataset[:, 1])
-            # loss = self.loss_fn(logits.squeeze_(), test_dataset[:, 2].type(torch.float))
-            loss = self.loss_fn(logits.squeeze_(), test_score)
+            loss = self.loss_fn(logits.squeeze_(), test_dataset[:, 2].type(torch.float))
+            # loss = self.loss_fn(logits.squeeze_(), test_score)
         indices = torch.ge(logits, 0).type(torch.int)
         indices_numpy = indices.cpu().clone().numpy()
         test_dataset_numpy = test_dataset.cpu().clone().numpy()

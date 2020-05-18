@@ -10,7 +10,7 @@ class GAT(nn.Module):
                  n_classes,
                  n_layers,
                  activation=F.relu,
-                 num_heads=2):
+                 num_heads=4):
         super(GAT, self).__init__()
         self.layers = nn.ModuleList()
 

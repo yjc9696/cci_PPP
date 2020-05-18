@@ -39,7 +39,7 @@ class GraphSAGE(nn.Module):
 
         # output layer
         self.linear1 = nn.Linear(n_hidden*3, n_hidden)
-        # self.dense1_bn = nn.BatchNorm1d(n_hidden)
+        self.dense1_bn = nn.BatchNorm1d(n_hidden)
         self.linear2 = nn.Linear(n_hidden, n_classes)
         self.linear_mse = nn.Linear(n_hidden, 1)
 
@@ -55,8 +55,8 @@ class GraphSAGE(nn.Module):
         h = self.linear1(torch.cat([h[x1], h[x2], torch.abs(h[x1]-h[x2])], 1))
         # h_src = self.linear1(h[x1] + h[x2])
         # mouse doesn't have bn
-        # h = self.dense1_bn(h)
         h = F.relu(h)
+        h = self.dense1_bn(h)
         h_c = self.linear2(h)
         h_mse = self.linear_mse(h)
         return h_c, h_mse
