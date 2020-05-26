@@ -24,6 +24,7 @@ class Trainer:
         self.params = params
         
         self.device = torch.device('cpu' if self.params.gpu == -1 else f'cuda:{params.gpu}')
+        print(self.device)
         # self.log_dir = get_dump_path(params) 
 
         self.batch_size = params.batch_size
@@ -80,7 +81,7 @@ class Trainer:
         loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
 
         ll_loss = 1e5
-        
+        print("start train")
         for epoch in range(self.params.n_epochs):
             self.model.train()
             for step, (batch_x1, batch_x2, batch_y) in enumerate(self.train_dataloader):
@@ -138,10 +139,10 @@ class Trainer:
 
 if __name__ == '__main__':
     """
-    python ./code/train_mammary_PPP.py --dataset 10000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset10000 --test_dataset test_dataset10000 --save_model_path checekpoints_ppp_10000.pth
+    python ./code/train_mammary_PPP.py --dataset 10000 --tissue blood --dense_dim 2000 --hidden_dim 1000 --n_epochs 100 --train_dataset train_dataset10000 --test_dataset test_dataset10000 --save_model_path checekpoints_ppp_10000.pth
     python ./code/train_mammary_PPP.py --dataset 50000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset50000 --test_dataset test_dataset50000 --save_model_path checekpoints_ppp_50000.pth
     python ./code/train_mammary_PPP.py --dataset 350000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset_all --test_dataset test_dataset_all --save_model_path checekpoints_ppp_all.pth
-    python ./code/train_mammary_PPP.py --dataset 350000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset_all_cross --test_dataset test_dataset_all_cross --save_model_path checekpoints_ppp_all_cross.pth
+    python ./code/train_mammary_PPP.py --lr 1e-3 --dataset 350000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset_all_cross --test_dataset test_dataset_all_cross --save_model_path checekpoints_ppp_all_cross.pth
    
     """
     parser = argparse.ArgumentParser(description='GraphSAGE')
@@ -156,7 +157,7 @@ if __name__ == '__main__':
                         help="number of training epochs")
     parser.add_argument("--dense_dim", type=int, default=400,
                         help="number of hidden gcn units")
-    parser.add_argument("--hidden_dim", type=int, default=200,
+    parser.add_argument("--hidden_dim", type=int, default=2000,
                         help="number of hidden gcn units")
     # parser.add_argument("--n_classes", type=int, default=10,
     #                     help="number of classes")

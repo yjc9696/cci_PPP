@@ -23,7 +23,6 @@ def load_PPP_mammary_gland(params):
 
     ligand_receptor_pair_path = params.ligand_receptor_pair_path
 
-    all_data = train
 
     proj_path = Path(__file__).parent.resolve().parent.resolve().parent.resolve()
     data_path = proj_path / 'data' / 'PPP'
@@ -62,7 +61,6 @@ def load_PPP_mammary_gland(params):
     start = time()
     # add all genes as nodes
     graph.add_nodes(num_genes)
-
 
     # stores the pairs that have relation
 
@@ -103,7 +101,8 @@ def load_PPP_mammary_gland(params):
         junk_cci_labels[2] = 0
         junk_cci_labels = junk_cci_labels.values.tolist()
         test_cci_labels += junk_cci_labels
-
+    random.shuffle(train_cci_labels)
+    random.shuffle(test_cci_labels)
     matrices = []
     row_idx = []
     col_idx = []
@@ -125,10 +124,10 @@ def load_PPP_mammary_gland(params):
     # import pdb; pdb.set_trace()
     # sparse_feat = sparse_feat[:, 0:10000]
     print(sparse_feat.shape)
-    gene_pca = PCA(dense_dim, random_state=random_seed).fit(sparse_feat[:train].T)
+    gene_pca = PCA(dense_dim, random_state=random_seed).fit(sparse_feat[:num_genes].T)
     # gene_pca = PCA(n_components='mle', random_state=random_seed).fit(sparse_feat[:sum(train)].T)
 
-    gene_feat = gene_pca.transform(sparse_feat[:train].T)
+    gene_feat = gene_pca.transform(sparse_feat[:num_genes].T)
     gene_evr = sum(gene_pca.explained_variance_ratio_) * 100
     # print(f'[PCA] explained_variance_: {gene_pca.explained_variance_}')
     print(f'[PCA] Gene EVR: {gene_evr:.2f} %.')
@@ -138,9 +137,9 @@ def load_PPP_mammary_gland(params):
     # sparse_feat = preprocessing.normalize(sparse_feat, norm='max', axis=1)
     # sparse_feat = sparse_feat / np.linalg.norm(sparse_feat, axis=1)[0]
     gene_feat = torch.from_numpy(gene_feat)
-    # features = torch.cat([gene_feat], dim=0).type(torch.float)
+    features = torch.cat([gene_feat], dim=0).type(torch.float)
     # features = gene_feat.type(torch.float)
-    features = torch.FloatTensor(graph.number_of_nodes(), params.dense_dim).normal_()
+    # features = torch.FloatTensor(graph.number_of_nodes(), params.dense_dim).normal_()
 
     # 3. then create masks for different purposes.
 

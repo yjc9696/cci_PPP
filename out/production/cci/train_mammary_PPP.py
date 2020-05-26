@@ -24,6 +24,7 @@ class Trainer:
         self.params = params
         
         self.device = torch.device('cpu' if self.params.gpu == -1 else f'cuda:{params.gpu}')
+        print(self.device)
         # self.log_dir = get_dump_path(params) 
 
         self.batch_size = params.batch_size
@@ -60,6 +61,7 @@ class Trainer:
         #                  n_layers=params.n_layers,
         #                  activation=F.relu)
         self.graph.readonly(readonly_state=True)
+        self.loss_fn = nn.BCEWithLogitsLoss().to(self.device)
         self.model.to(self.device)
         self.features = self.features.to(self.device)
         self.train_mask = self.train_mask.to(self.device)
@@ -76,20 +78,19 @@ class Trainer:
             print(f'load model from {self.pretrained_model_path}')
             self.model.load_state_dict(torch.load(self.pretrained_model_path))
         self.model.train()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr)
-        loss_fn = nn.CrossEntropyLoss(weight=self.loss_weight)
+        # optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params.lr, weight_decay=0.0001)
 
         ll_loss = 1e5
-        
+        print("start train")
         for epoch in range(self.params.n_epochs):
             self.model.train()
-            for step, (batch_x1, batch_x2, batch_y) in enumerate(self.train_dataloader):
+            for step, (batch_x1, batch_x2, batch_y_classify,batch_y) in enumerate(self.train_dataloader):
                 # list_tar = list(enumerate(self.test_dataloader))
 
                 logits = self.model(self.graph, self.features, batch_x1, batch_x2)
                 # import pdb; pdb.set_trace()
-                loss = loss_fn(logits, batch_y)
-
+                loss = self.loss_fn(logits.squeeze_(), batch_y_classify.type(torch.float))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -138,9 +139,11 @@ class Trainer:
 
 if __name__ == '__main__':
     """
-    python ./code/train_mammary_PPP.py --dataset 10000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset10000 --test_dataset test_dataset10000 --save_model_path checekpoints_ppp_10000.pth
+    python ./code/train_mammary_PPP.py --dataset 10000 --tissue blood --dense_dim 2000 --hidden_dim 1000 --n_epochs 100 --train_dataset train_dataset10000 --test_dataset test_dataset10000 --save_model_path checekpoints_ppp_10000.pth
     python ./code/train_mammary_PPP.py --dataset 50000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset50000 --test_dataset test_dataset50000 --save_model_path checekpoints_ppp_50000.pth
-    python ./code/train_mammary.py --train_dataset 2466 --test_dataset 135 283 352 658 3201 --tissue Peripheral_blood
+    python ./code/train_mammary_PPP.py --dataset 350000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset_all --test_dataset test_dataset_all --save_model_path checekpoints_ppp_all.pth
+    python ./code/train_mammary_PPP.py --lr 1e-3 --dataset 350000 --tissue blood --dense_dim 2000 --n_epochs 100 --train_dataset train_dataset_all_cross --test_dataset test_dataset_all_cross --save_model_path checekpoints_ppp_all_cross.pth
+   
     """
     parser = argparse.ArgumentParser(description='GraphSAGE')
     parser.add_argument("--random_seed", type=int, default=10086)
@@ -154,7 +157,7 @@ if __name__ == '__main__':
                         help="number of training epochs")
     parser.add_argument("--dense_dim", type=int, default=400,
                         help="number of hidden gcn units")
-    parser.add_argument("--hidden_dim", type=int, default=200,
+    parser.add_argument("--hidden_dim", type=int, default=2000,
                         help="number of hidden gcn units")
     # parser.add_argument("--n_classes", type=int, default=10,
     #                     help="number of classes")
